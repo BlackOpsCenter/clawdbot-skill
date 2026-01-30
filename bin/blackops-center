@@ -15,8 +15,8 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
 fi
 
 # Parse YAML (simple grep-based approach for these specific keys)
-API_TOKEN=$(grep '^api_token:' "$CONFIG_FILE" | sed 's/^api_token:[[:space:]]*"\?\([^"]*\)"\?/\1/' | tr -d '\n\r')
-BASE_URL=$(grep '^base_url:' "$CONFIG_FILE" | sed 's/^base_url:[[:space:]]*"\?\([^"]*\)"\?/\1/' | tr -d '\n\r')
+API_TOKEN=$(grep '^api_token:' "$CONFIG_FILE" | sed 's/^api_token:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+BASE_URL=$(grep '^base_url:' "$CONFIG_FILE" | sed 's/^base_url:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
 
 if [[ -z "$API_TOKEN" ]]; then
   echo "Error: api_token not set in config.yaml" >&2
