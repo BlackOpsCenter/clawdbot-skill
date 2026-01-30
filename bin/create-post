@@ -8,6 +8,8 @@ CONTENT=""
 EXCERPT=""
 TAGS=""
 STATUS="draft"
+DOMAIN=""
+SITE_ID=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -31,6 +33,14 @@ while [[ $# -gt 0 ]]; do
       STATUS="$2"
       shift 2
       ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --site-id)
+      SITE_ID="$2"
+      shift 2
+      ;;
     --help|-h)
       cat <<EOF
 Create a new blog post
@@ -46,6 +56,8 @@ Optional:
   --excerpt <text>      Post excerpt/description
   --tags <tags>         Comma-separated tags (e.g., "ai,automation,tools")
   --status <status>     Post status (draft or published, default: draft)
+  --domain <domain>     Specify site by domain (e.g., benenewton.com)
+  --site-id <id>        Specify site by ID
 
 Examples:
   blackops-center create-post \\
@@ -80,13 +92,16 @@ PAYLOAD=$(jq -n \
   --arg excerpt "$EXCERPT" \
   --arg status "$STATUS" \
   --arg tags "$TAGS" \
+  --arg domain "$DOMAIN" \
+  --arg site_id "$SITE_ID" \
   '{
     title: $title,
     content: $content,
     excerpt: $excerpt,
     status: $status,
     tags: ($tags | split(",") | map(select(length > 0)))
-  }')
+  } + (if $domain != "" then {domain: $domain} else {} end)
+    + (if $site_id != "" then {site_id: $site_id} else {} end)')
 
 curl -s -X POST \
   -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \

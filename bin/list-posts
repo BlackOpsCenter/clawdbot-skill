@@ -5,6 +5,8 @@ set -euo pipefail
 
 STATUS=""
 LIMIT="50"
+DOMAIN=""
+SITE_ID=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -14,6 +16,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --limit)
       LIMIT="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --site-id)
+      SITE_ID="$2"
       shift 2
       ;;
     --help|-h)
@@ -26,10 +36,13 @@ Usage:
 Options:
   --status <status>   Filter by status (draft, published)
   --limit <number>    Number of posts to return (default: 50, max: 200)
+  --domain <domain>   Specify site by domain (e.g., benenewton.com)
+  --site-id <id>      Specify site by ID
 
 Examples:
   blackops-center list-posts
   blackops-center list-posts --status draft
+  blackops-center list-posts --domain benenewton.com --status published
   blackops-center list-posts --status published --limit 10
 EOF
       exit 0
@@ -45,6 +58,12 @@ done
 QUERY="?limit=${LIMIT}"
 if [[ -n "$STATUS" ]]; then
   QUERY="${QUERY}&status=${STATUS}"
+fi
+if [[ -n "$DOMAIN" ]]; then
+  QUERY="${QUERY}&domain=${DOMAIN}"
+fi
+if [[ -n "$SITE_ID" ]]; then
+  QUERY="${QUERY}&site_id=${SITE_ID}"
 fi
 
 curl -s -X GET \
