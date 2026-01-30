@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# BlackOps Center CLI
+# Main entry point for all commands
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_FILE="${SKILL_DIR}/config.yaml"
+
+# Load config
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  echo "Error: config.yaml not found" >&2
+  echo "Create ${CONFIG_FILE} with your api_token and base_url" >&2
+  exit 1
+fi
+
+# Parse YAML (simple grep-based approach for these specific keys)
+API_TOKEN=$(grep '^api_token:' "$CONFIG_FILE" | sed 's/^api_token:[[:space:]]*"\?\([^"]*\)"\?/\1/' | tr -d '\n\r')
+BASE_URL=$(grep '^base_url:' "$CONFIG_FILE" | sed 's/^base_url:[[:space:]]*"\?\([^"]*\)"\?/\1/' | tr -d '\n\r')
+
+if [[ -z "$API_TOKEN" ]]; then
+  echo "Error: api_token not set in config.yaml" >&2
+  exit 1
+fi
+
+if [[ -z "$BASE_URL" ]]; then
+  BASE_URL="https://blackopscenter.com"
+fi
+
+# Export for subcommands
+export BLACKOPS_API_TOKEN="$API_TOKEN"
+export BLACKOPS_BASE_URL="$BASE_URL"
+
+# Route to subcommand
+COMMAND="${1:-help}"
+shift || true
+
+case "$COMMAND" in
+  list-sites)
+    exec "${SKILL_DIR}/bin/list-sites" "$@"
+    ;;
+  list-posts)
+    exec "${SKILL_DIR}/bin/list-posts" "$@"
+    ;;
+  get-post)
+    exec "${SKILL_DIR}/bin/get-post" "$@"
+    ;;
+  create-post)
+    exec "${SKILL_DIR}/bin/create-post" "$@"
+    ;;
+  update-post)
+    exec "${SKILL_DIR}/bin/update-post" "$@"
+    ;;
+  delete-post)
+    exec "${SKILL_DIR}/bin/delete-post" "$@"
+    ;;
+  help|--help|-h)
+    cat <<EOF
+BlackOps Center CLI
+
+Usage:
+  blackops-center <command> [options]
+
+Commands:
+  list-sites                List all sites you have access to
+  list-posts                List posts for your site
+  get-post <id>             Get a specific post
+  create-post               Create a new post
+  update-post <id>          Update an existing post
+  delete-post <id>          Delete a post
+
+Examples:
+  blackops-center list-posts --status draft
+  blackops-center create-post --title "My Post" --content "Content here"
+  blackops-center update-post abc123 --status published
+
+Run 'blackops-center <command> --help' for command-specific help.
+EOF
+    ;;
+  *)
+    echo "Unknown command: $COMMAND" >&2
+    echo "Run 'blackops-center help' for usage." >&2
+    exit 1
+    ;;
+esac

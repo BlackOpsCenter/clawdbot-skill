@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Update an existing post
+
+if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+  cat <<EOF
+Update an existing blog post
+
+Usage:
+  blackops-center update-post <post-id> [options]
+
+Options:
+  --title <title>           Update title
+  --content <content>       Update content
+  --excerpt <text>          Update excerpt
+  --tags <tags>             Update tags (comma-separated)
+  --status <status>         Update status (draft or published)
+  --featured-image <url>    Update featured image URL
+
+Examples:
+  # Publish a draft
+  blackops-center update-post abc123 --status published
+
+  # Update title and content
+  blackops-center update-post abc123 \\
+    --title "New Title" \\
+    --content "New content here"
+
+  # Unpublish back to draft
+  blackops-center update-post abc123 --status draft
+EOF
+  exit 0
+fi
+
+POST_ID="$1"
+shift
+
+# Build JSON payload dynamically based on provided flags
+JSON_PARTS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --title)
+      JSON_PARTS+=("\"title\": $(jq -n --arg v "$2" '$v')")
+      shift 2
+      ;;
+    --content)
+      JSON_PARTS+=("\"content\": $(jq -n --arg v "$2" '$v')")
+      shift 2
+      ;;
+    --excerpt)
+      JSON_PARTS+=("\"excerpt\": $(jq -n --arg v "$2" '$v')")
+      shift 2
+      ;;
+    --tags)
+      TAGS_JSON=$(jq -n --arg v "$2" '$v | split(",") | map(select(length > 0))')
+      JSON_PARTS+=("\"tags\": ${TAGS_JSON}")
+      shift 2
+      ;;
+    --status)
+      JSON_PARTS+=("\"status\": $(jq -n --arg v "$2" '$v')")
+      shift 2
+      ;;
+    --featured-image)
+      JSON_PARTS+=("\"featured_image\": $(jq -n --arg v "$2" '$v')")
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ ${#JSON_PARTS[@]} -eq 0 ]]; then
+  echo "Error: At least one field must be updated" >&2
+  echo "Run 'blackops-center update-post --help' for usage" >&2
+  exit 1
+fi
+
+# Join JSON parts
+JSON_BODY="{$(IFS=,; echo "${JSON_PARTS[*]}")}"
+
+curl -s -X PUT \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$JSON_BODY" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}"

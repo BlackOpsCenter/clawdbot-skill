@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# List all sites accessible with the current token
+
+curl -s -X GET \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  "${BLACKOPS_BASE_URL}/api/ext/sites"

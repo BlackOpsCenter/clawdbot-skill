@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# List posts for the current site
+
+STATUS=""
+LIMIT="50"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --status)
+      STATUS="$2"
+      shift 2
+      ;;
+    --limit)
+      LIMIT="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+List posts for your site
+
+Usage:
+  blackops-center list-posts [options]
+
+Options:
+  --status <status>   Filter by status (draft, published)
+  --limit <number>    Number of posts to return (default: 50, max: 200)
+
+Examples:
+  blackops-center list-posts
+  blackops-center list-posts --status draft
+  blackops-center list-posts --status published --limit 10
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Build query string
+QUERY="?limit=${LIMIT}"
+if [[ -n "$STATUS" ]]; then
+  QUERY="${QUERY}&status=${STATUS}"
+fi
+
+curl -s -X GET \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts${QUERY}"

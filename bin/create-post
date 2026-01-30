@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Create a new post
+
+TITLE=""
+CONTENT=""
+EXCERPT=""
+TAGS=""
+STATUS="draft"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --title)
+      TITLE="$2"
+      shift 2
+      ;;
+    --content)
+      CONTENT="$2"
+      shift 2
+      ;;
+    --excerpt)
+      EXCERPT="$2"
+      shift 2
+      ;;
+    --tags)
+      TAGS="$2"
+      shift 2
+      ;;
+    --status)
+      STATUS="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Create a new blog post
+
+Usage:
+  blackops-center create-post --title "..." --content "..." [options]
+
+Required:
+  --title <title>       Post title
+  --content <content>   Post content (markdown)
+
+Optional:
+  --excerpt <text>      Post excerpt/description
+  --tags <tags>         Comma-separated tags (e.g., "ai,automation,tools")
+  --status <status>     Post status (draft or published, default: draft)
+
+Examples:
+  blackops-center create-post \\
+    --title "My Post" \\
+    --content "# Hello\n\nThis is my post content."
+
+  blackops-center create-post \\
+    --title "Published Post" \\
+    --content "Content here" \\
+    --status published \\
+    --tags "ai,automation"
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$TITLE" ]] || [[ -z "$CONTENT" ]]; then
+  echo "Error: --title and --content are required" >&2
+  echo "Run 'blackops-center create-post --help' for usage" >&2
+  exit 1
+fi
+
+# Build JSON payload
+PAYLOAD=$(jq -n \
+  --arg title "$TITLE" \
+  --arg content "$CONTENT" \
+  --arg excerpt "$EXCERPT" \
+  --arg status "$STATUS" \
+  --arg tags "$TAGS" \
+  '{
+    title: $title,
+    content: $content,
+    excerpt: $excerpt,
+    status: $status,
+    tags: ($tags | split(",") | map(select(length > 0)))
+  }')
+
+curl -s -X POST \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$PAYLOAD" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts"

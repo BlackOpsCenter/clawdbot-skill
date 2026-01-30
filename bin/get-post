@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Get a specific post by ID
+
+if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+  cat <<EOF
+Get a specific post by ID
+
+Usage:
+  blackops-center get-post <post-id>
+
+Examples:
+  blackops-center get-post abc123-def456-789
+EOF
+  exit 0
+fi
+
+POST_ID="$1"
+
+curl -s -X GET \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}"
