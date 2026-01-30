@@ -1,3 +1,10 @@
+---
+name: blackops-center
+description: Control your BlackOps Center sites from Clawdbot - create, publish, and manage blog posts via API.
+homepage: https://github.com/BlackOpsCenter/clawdbot-skill
+metadata: {"clawdbot":{"emoji":"📝","requires":{"bins":["curl","jq"]}}}
+---
+
 # BlackOps Center Skill
 
 Control your BlackOps Center sites from Clawdbot. Create, publish, and manage blog posts via API.
