@@ -19,13 +19,13 @@ New extension API endpoints for managing posts:
 **Authentication:**
 Uses existing `extension_api_tokens` system with Bearer token validation.
 
-### 2. Clawdbot Skill
+### 2. OpenClaw Skill
 Complete CLI skill for controlling BlackOps Center:
 
 **Location:** `~/clawd/skills/blackops-center/`
 
 **Files:**
-- `SKILL.md` - Documentation for Clawdbot
+- `SKILL.md` - Documentation for OpenClaw
 - `README.md` - Public documentation for ClawdHub
 - `package.json` - Publishing metadata
 - `config.example.yaml` - Configuration template
@@ -110,8 +110,8 @@ Complete CLI skill for controlling BlackOps Center:
    ./bin/blackops-center delete-post <POST_ID>
    ```
 
-4. **Test with Clawdbot:**
-   Start a Clawdbot session and try:
+4. **Test with OpenClaw:**
+   Start a OpenClaw session and try:
    - "Show me my draft posts in BlackOps"
    - "Create a blog post titled 'Testing the Skill' with content about AI automation"
    - "List my recent posts"
@@ -157,7 +157,7 @@ Before publishing, verify:
 - [ ] `update-post` can change status to published
 - [ ] `update-post` can modify content
 - [ ] `delete-post` removes the post
-- [ ] Clawdbot can invoke commands via the skill
+- [ ] OpenClaw can invoke commands via the skill
 - [ ] All help text is accurate
 - [ ] README is complete and accurate
 
@@ -196,7 +196,7 @@ Possible additions:
 
 ## Documentation Links
 
-- [SKILL.md](./SKILL.md) - Skill documentation for Clawdbot
+- [SKILL.md](./SKILL.md) - Skill documentation for OpenClaw
 - [README.md](./README.md) - Public documentation
 - [BlackOps Center](https://blackopscenter.com)
 - [ClawdHub](https://clawdhub.com)

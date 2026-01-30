@@ -1,6 +1,6 @@
-# BlackOps Center Skill for Clawdbot
+# BlackOps Center Skill for OpenClaw
 
-Control your [BlackOps Center](https://blackopscenter.com) content from Clawdbot. Create, publish, and manage blog posts using natural language or direct CLI commands.
+Control your [BlackOps Center](https://blackopscenter.com) content from OpenClaw. Create, publish, and manage blog posts using natural language or direct CLI commands.
 
 ## What is BlackOps Center?
 
@@ -8,7 +8,7 @@ BlackOps Center is a Content Operating System for operators, founders, and techn
 
 ## What This Skill Does
 
-This skill lets you interact with your BlackOps Center sites directly from Clawdbot:
+This skill lets you interact with your BlackOps Center sites directly from OpenClaw:
 
 - **List and search posts** across your site(s)
 - **Create new posts** from conversation or direct commands
@@ -17,7 +17,7 @@ This skill lets you interact with your BlackOps Center sites directly from Clawd
 - **Delete posts** when needed
 
 Perfect for:
-- Voice-driven content creation (via VoiceCommit + Clawdbot + BlackOps)
+- Voice-driven content creation (via VoiceCommit + OpenClaw + BlackOps)
 - Automated publishing workflows
 - Quick post status changes
 - Content audits and inventory
@@ -33,7 +33,7 @@ clawdhub install blackops-center
 
 ### Manual Installation
 
-1. Clone or download this skill to `~/.clawdbot/skills/blackops-center`
+1. Clone or download this skill to `~/.openclaw/skills/blackops-center`
 2. Copy `config.example.yaml` to `config.yaml`
 3. Generate an API token in BlackOps Center (Settings → Browser Extension)
 4. Paste your token into `config.yaml`
@@ -48,7 +48,7 @@ clawdhub install blackops-center
 
 2. **Configure the skill:**
    ```bash
-   cd ~/.clawdbot/skills/blackops-center
+   cd ~/.openclaw/skills/blackops-center
    cp config.example.yaml config.yaml
    nano config.yaml  # paste your token
    ```
@@ -59,7 +59,7 @@ clawdhub install blackops-center
    blackops-center list-posts --status draft
    ```
 
-4. **Use with Clawdbot:**
+4. **Use with OpenClaw:**
    - "Show me my recent draft posts in BlackOps"
    - "Create a blog post titled 'AI Automation in 2026'"
    - "Publish post abc123"
@@ -125,23 +125,23 @@ Delete a post (permanent).
 blackops-center delete-post abc123
 ```
 
-## Usage with Clawdbot
+## Usage with OpenClaw
 
-Once installed, Clawdbot can use this skill when you mention BlackOps Center in your requests:
+Once installed, OpenClaw can use this skill when you mention BlackOps Center in your requests:
 
 **Example conversations:**
 
 > **You:** "Create a blog post about the future of AI agents"
 > 
-> **Clawdbot:** [Creates draft post with generated content, returns post ID and preview URL]
+> **OpenClaw:** [Creates draft post with generated content, returns post ID and preview URL]
 
 > **You:** "Show me all my draft posts"
 > 
-> **Clawdbot:** [Lists drafts with titles, IDs, and creation dates]
+> **OpenClaw:** [Lists drafts with titles, IDs, and creation dates]
 
 > **You:** "Publish post abc123"
 > 
-> **Clawdbot:** [Updates status to published, confirms with live URL]
+> **OpenClaw:** [Updates status to published, confirms with live URL]
 
 ## Configuration
 
@@ -187,15 +187,15 @@ All endpoints require `Authorization: Bearer <token>` header.
 - Verify the domain in BlackOps Center settings
 
 **Command not found:**
-- Ensure scripts are executable: `chmod +x ~/.clawdbot/skills/blackops-center/bin/*`
-- Check skill is installed in `~/.clawdbot/skills/`
+- Ensure scripts are executable: `chmod +x ~/.openclaw/skills/blackops-center/bin/*`
+- Check skill is installed in `~/.openclaw/skills/`
 
 **JSON parsing errors:**
 - Ensure `jq` is installed: `brew install jq` (macOS) or `apt install jq` (Linux)
 
 ## Requirements
 
-- Clawdbot (any recent version)
+- OpenClaw (any recent version)
 - BlackOps Center account with active site
 - `jq` for JSON processing (usually pre-installed)
 - `curl` for API requests (standard on macOS/Linux)
@@ -204,7 +204,7 @@ All endpoints require `Authorization: Bearer <token>` header.
 
 This skill is part of the BlackOps Center ecosystem. Issues and improvements:
 
-- Skill issues: [ClawdHub repository](https://github.com/clawdbot/skills)
+- Skill issues: [ClawdHub repository](https://github.com/openclaw/skills)
 - BlackOps API issues: Contact support@blackopscenter.com
 - Feature requests: Use the feedback form in BlackOps Center
 
@@ -215,6 +215,6 @@ MIT License - See LICENSE file for details
 ## Links
 
 - [BlackOps Center](https://blackopscenter.com)
-- [Clawdbot](https://clawd.bot)
+- [OpenClaw](https://openclaw.io)
 - [ClawdHub](https://clawdhub.com)
 - [VoiceCommit](https://voicecommit.com) - Voice-first idea capture (pairs great with this workflow)

@@ -1,13 +1,13 @@
 ---
 name: blackops-center
-description: Control your BlackOps Center sites from Clawdbot - create, publish, and manage blog posts via API.
-homepage: https://github.com/BlackOpsCenter/clawdbot-skill
-metadata: {"clawdbot":{"emoji":"📝","requires":{"bins":["curl","jq"]}}}
+description: Control your BlackOps Center sites from OpenClaw - create, publish, and manage blog posts via API.
+homepage: https://github.com/BlackOpsCenter/openclaw-skill
+metadata: {"openclaw":{"emoji":"📝","requires":{"bins":["curl","jq"]}}}
 ---
 
 # BlackOps Center Skill
 
-Control your BlackOps Center sites from Clawdbot. Create, publish, and manage blog posts via API.
+Control your BlackOps Center sites from OpenClaw. Create, publish, and manage blog posts via API.
 
 ## Setup
 
@@ -17,7 +17,7 @@ Control your BlackOps Center sites from Clawdbot. Create, publish, and manage bl
 
 2. **Configure the skill**:
    ```bash
-   cd ~/.clawdbot/skills/blackops-center
+   cd ~/.openclaw/skills/blackops-center
    cp config.example.yaml config.yaml
    # Edit config.yaml and paste your token
    ```
@@ -111,9 +111,9 @@ You can combine multiple flags to update multiple fields at once.
 blackops-center delete-post <post-id>
 ```
 
-## Usage from Clawdbot
+## Usage from OpenClaw
 
-When you invoke this skill from a Clawdbot session, you can use natural language:
+When you invoke this skill from a OpenClaw session, you can use natural language:
 
 **User:** "Create a blog post about AI agents titled 'The Future of Automation'"
 
@@ -194,8 +194,8 @@ done
 - If you need to manage multiple sites, generate separate tokens for each
 
 **Command not found:**
-- Make sure `bin/` is executable: `chmod +x ~/.clawdbot/skills/blackops-center/bin/*`
-- Skill should be installed via ClawdHub or symlinked to `~/.clawdbot/skills/`
+- Make sure `bin/` is executable: `chmod +x ~/.openclaw/skills/blackops-center/bin/*`
+- Skill should be installed via ClawdHub or symlinked to `~/.openclaw/skills/`
 
 ## Development
 
@@ -209,5 +209,5 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 ## Support
 
 - BlackOps Center: https://blackopscenter.com
-- Issues: https://github.com/clawdbot/skills (if published)
+- Issues: https://github.com/openclaw/skills (if published)
 - Documentation: This file
