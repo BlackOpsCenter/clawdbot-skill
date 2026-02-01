@@ -85,6 +85,16 @@ blackops-center create-post \
 
 All posts are created as drafts by default.
 
+**Output:**
+```
+{"post": {...}, "site": {...}}  # JSON response on stdout
+
+✓ Post created: draft
+Preview: https://yoursite.com/preview/my-post-title?token=abc123
+```
+
+The command outputs JSON on stdout (for programmatic use) and a human-readable preview link on stderr.
+
 ### Update a Post
 
 Update an existing post:
@@ -104,6 +114,22 @@ blackops-center update-post <post-id> --status draft
 ```
 
 You can combine multiple flags to update multiple fields at once.
+
+**Output when publishing:**
+```
+{...}  # JSON response
+
+✓ Post published
+Live URL: https://yoursite.com/post-slug
+```
+
+**Output for draft updates:**
+```
+{...}  # JSON response
+
+✓ Post updated: draft
+Preview: https://yoursite.com/preview/post-slug?token=abc123
+```
 
 ### Delete a Post
 

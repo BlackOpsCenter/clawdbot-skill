@@ -102,6 +102,12 @@ blackops-center create-post \
   --tags "ai,automation,productivity"
 ```
 
+**New in v1.1.0:** Automatically outputs shareable preview link:
+```
+✓ Post created: draft
+Preview: https://yoursite.com/preview/my-post-title?token=abc123
+```
+
 ### `update-post <id>`
 Update an existing post (including publishing).
 
@@ -116,6 +122,12 @@ blackops-center update-post abc123 --content "New content"
 blackops-center update-post abc123 \
   --title "New Title" \
   --status published
+```
+
+**New in v1.1.0:** Shows published or preview URL after update:
+```
+✓ Post published
+Live URL: https://yoursite.com/post-slug
 ```
 
 ### `delete-post <id>`
