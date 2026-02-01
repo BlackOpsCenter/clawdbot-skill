@@ -103,8 +103,40 @@ PAYLOAD=$(jq -n \
   } + (if $domain != "" then {domain: $domain} else {} end)
     + (if $site_id != "" then {site_id: $site_id} else {} end)')
 
-curl -s -X POST \
+RESPONSE=$(curl -s -X POST \
   -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD" \
-  "${BLACKOPS_BASE_URL}/api/ext/posts"
+  "${BLACKOPS_BASE_URL}/api/ext/posts")
+
+# Extract preview URL components from response
+POST_SLUG=$(echo "$RESPONSE" | jq -r '.post.slug // empty')
+PREVIEW_TOKEN=$(echo "$RESPONSE" | jq -r '.post.preview_token // empty')
+SITE_DOMAIN=$(echo "$RESPONSE" | jq -r '.site.name // empty')
+POST_STATUS=$(echo "$RESPONSE" | jq -r '.post.status // empty')
+
+# Output the full JSON response
+echo "$RESPONSE"
+
+# If we have preview token and slug, output a human-readable preview link
+if [[ -n "$POST_SLUG" ]] && [[ -n "$PREVIEW_TOKEN" ]]; then
+  # Determine the domain to use
+  PREVIEW_DOMAIN=""
+  if [[ -n "$DOMAIN" ]]; then
+    PREVIEW_DOMAIN="$DOMAIN"
+  else
+    # Extract domain from the response site info or use default
+    PREVIEW_DOMAIN=$(echo "$RESPONSE" | jq -r '.site.domain // empty')
+    if [[ -z "$PREVIEW_DOMAIN" ]]; then
+      PREVIEW_DOMAIN="${BLACKOPS_BASE_URL#https://}"
+      PREVIEW_DOMAIN="${PREVIEW_DOMAIN#http://}"
+    fi
+  fi
+  
+  # Construct preview URL
+  PREVIEW_URL="https://${PREVIEW_DOMAIN}/preview/${POST_SLUG}?token=${PREVIEW_TOKEN}"
+  
+  echo "" >&2
+  echo "✓ Post created: $POST_STATUS" >&2
+  echo "Preview: $PREVIEW_URL" >&2
+fi

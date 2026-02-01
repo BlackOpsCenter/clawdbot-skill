@@ -82,8 +82,42 @@ fi
 # Join JSON parts
 JSON_BODY="{$(IFS=,; echo "${JSON_PARTS[*]}")}"
 
-curl -s -X PUT \
+RESPONSE=$(curl -s -X PUT \
   -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "$JSON_BODY" \
-  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}"
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}")
+
+# Extract components from response
+POST_SLUG=$(echo "$RESPONSE" | jq -r '.slug // .post.slug // empty')
+POST_STATUS=$(echo "$RESPONSE" | jq -r '.status // .post.status // empty')
+PREVIEW_TOKEN=$(echo "$RESPONSE" | jq -r '.preview_token // .post.preview_token // empty')
+SITE_DOMAIN=$(echo "$RESPONSE" | jq -r '.site.domain // empty')
+
+# If no site domain in response, fetch from base URL
+if [[ -z "$SITE_DOMAIN" ]]; then
+  SITE_DOMAIN="${BLACKOPS_BASE_URL#https://}"
+  SITE_DOMAIN="${SITE_DOMAIN#http://}"
+  SITE_DOMAIN="${SITE_DOMAIN%%/*}"
+fi
+
+# Output the full JSON response
+echo "$RESPONSE"
+
+# Show appropriate URL based on status
+if [[ -n "$POST_SLUG" ]]; then
+  if [[ "$POST_STATUS" == "published" ]]; then
+    PUBLISHED_URL="https://${SITE_DOMAIN}/${POST_SLUG}"
+    echo "" >&2
+    echo "✓ Post published" >&2
+    echo "Live URL: $PUBLISHED_URL" >&2
+  elif [[ -n "$PREVIEW_TOKEN" ]]; then
+    PREVIEW_URL="https://${SITE_DOMAIN}/preview/${POST_SLUG}?token=${PREVIEW_TOKEN}"
+    echo "" >&2
+    echo "✓ Post updated: $POST_STATUS" >&2
+    echo "Preview: $PREVIEW_URL" >&2
+  else
+    echo "" >&2
+    echo "✓ Post updated: $POST_STATUS" >&2
+  fi
+fi
