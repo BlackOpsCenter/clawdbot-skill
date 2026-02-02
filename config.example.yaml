@@ -9,3 +9,9 @@ api_token: "your-token-here"
 # Default: https://blackopscenter.com
 # For self-hosted or custom domains, change this
 base_url: "https://blackopscenter.com"
+
+# Optional: Set a default site by domain or ID
+# If not set, commands will require --domain or --site-id
+# Run 'blackops-center list-sites' to see your available sites
+# default_domain: "yourdomain.com"
+# default_site_id: "your-site-uuid"

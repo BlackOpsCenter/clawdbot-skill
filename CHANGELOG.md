@@ -5,6 +5,42 @@ All notable changes to the BlackOps Center skill will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-02
+
+### Changed
+- **Simplified configuration** - Removed manual site array from config.yaml
+- Sites are now **auto-discovered** via `list-sites` API call using your token
+- Users only need to provide their API token in config
+- Optional `default_domain` or `default_site_id` for convenience
+- Updated all documentation to reflect token-only setup workflow
+
+### Benefits
+- Zero manual site configuration required
+- Works immediately after entering token
+- No hardcoded site IDs or domains in examples
+- Fully customer-agnostic deployment
+
+## [1.2.0] - 2026-02-02
+
+### Added
+- **Multi-site support**: Configure multiple sites (VoiceCommit, benenewton.com, VitalWall) in `config.yaml`
+- **Hero image generation**: New `generate-hero` command for AI-powered hero image creation
+- **SEO management**: New `update-seo` command for managing SEO metadata (title, description, keywords, OG image)
+- **Tag management**: New `manage-tags` command for advanced tag operations (add, remove, replace, list)
+- Enhanced config structure with per-site configuration (id, domain, name, default flag)
+- Support for `--domain` and `--site-id` flags across all commands for multi-site routing
+
+### Changed
+- Updated config.example.yaml with multi-site configuration examples
+- Enhanced help text to show advanced features and multi-site examples
+- Improved documentation for all commands with multi-site usage patterns
+
+### Technical Details
+- All new commands integrate with BlackOps Center Extension API
+- Hero generation supports custom prompts and style selection
+- SEO updates support partial field updates
+- Tag management supports atomic operations (add/remove/replace)
+
 ## [1.1.0] - 2026-02-01
 
 ### Added

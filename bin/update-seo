@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Update SEO metadata for a post
+
+POST_ID=""
+TITLE=""
+DESCRIPTION=""
+KEYWORDS=""
+OG_IMAGE=""
+DOMAIN=""
+SITE_ID=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --post-id)
+      POST_ID="$2"
+      shift 2
+      ;;
+    --title)
+      TITLE="$2"
+      shift 2
+      ;;
+    --description)
+      DESCRIPTION="$2"
+      shift 2
+      ;;
+    --keywords)
+      KEYWORDS="$2"
+      shift 2
+      ;;
+    --og-image)
+      OG_IMAGE="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --site-id)
+      SITE_ID="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Update SEO metadata for a post
+
+Usage:
+  blackops-center update-seo --post-id <id> [options]
+
+Required:
+  --post-id <id>        Post ID to update SEO for
+
+Optional:
+  --title <text>        SEO title (meta title)
+  --description <text>  SEO description (meta description)
+  --keywords <list>     Comma-separated keywords
+  --og-image <url>      Open Graph image URL
+  --domain <domain>     Specify site by domain
+  --site-id <id>        Specify site by ID
+
+Examples:
+  # Update SEO title and description
+  blackops-center update-seo --post-id abc123 \\
+    --title "Best AI Tools for 2026" \\
+    --description "Discover the top AI tools transforming productivity"
+
+  # Update all SEO fields
+  blackops-center update-seo --post-id abc123 \\
+    --title "Complete Guide" \\
+    --description "Everything you need to know" \\
+    --keywords "ai,automation,tools" \\
+    --og-image "https://example.com/image.jpg"
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$POST_ID" ]]; then
+  echo "Error: --post-id is required" >&2
+  echo "Run 'blackops-center update-seo --help' for usage" >&2
+  exit 1
+fi
+
+# Build JSON payload dynamically
+JSON_PARTS=()
+
+if [[ -n "$TITLE" ]]; then
+  JSON_PARTS+=("\"seo_title\": $(jq -n --arg v "$TITLE" '$v')")
+fi
+
+if [[ -n "$DESCRIPTION" ]]; then
+  JSON_PARTS+=("\"seo_description\": $(jq -n --arg v "$DESCRIPTION" '$v')")
+fi
+
+if [[ -n "$KEYWORDS" ]]; then
+  KEYWORDS_JSON=$(jq -n --arg v "$KEYWORDS" '$v | split(",") | map(select(length > 0))')
+  JSON_PARTS+=("\"seo_keywords\": ${KEYWORDS_JSON}")
+fi
+
+if [[ -n "$OG_IMAGE" ]]; then
+  JSON_PARTS+=("\"og_image\": $(jq -n --arg v "$OG_IMAGE" '$v')")
+fi
+
+if [[ -n "$DOMAIN" ]]; then
+  JSON_PARTS+=("\"domain\": $(jq -n --arg v "$DOMAIN" '$v')")
+fi
+
+if [[ -n "$SITE_ID" ]]; then
+  JSON_PARTS+=("\"site_id\": $(jq -n --arg v "$SITE_ID" '$v')")
+fi
+
+if [[ ${#JSON_PARTS[@]} -eq 0 ]]; then
+  echo "Error: At least one SEO field must be provided" >&2
+  echo "Run 'blackops-center update-seo --help' for usage" >&2
+  exit 1
+fi
+
+# Join JSON parts
+JSON_BODY="{$(IFS=,; echo "${JSON_PARTS[*]}")}"
+
+RESPONSE=$(curl -s -X PUT \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$JSON_BODY" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}/seo")
+
+# Output the full JSON response
+echo "$RESPONSE"
+
+echo "" >&2
+echo "✓ SEO metadata updated" >&2

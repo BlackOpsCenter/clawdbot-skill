@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Manage tags for a post
+
+POST_ID=""
+ACTION=""
+TAGS=""
+DOMAIN=""
+SITE_ID=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --post-id)
+      POST_ID="$2"
+      shift 2
+      ;;
+    --action)
+      ACTION="$2"
+      shift 2
+      ;;
+    --tags)
+      TAGS="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --site-id)
+      SITE_ID="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Manage tags for a post
+
+Usage:
+  blackops-center manage-tags --post-id <id> --action <action> --tags <tags> [options]
+
+Required:
+  --post-id <id>        Post ID to manage tags for
+  --action <action>     Action to perform (add, remove, replace, list)
+  --tags <tags>         Comma-separated tags (not required for 'list' action)
+
+Optional:
+  --domain <domain>     Specify site by domain
+  --site-id <id>        Specify site by ID
+
+Actions:
+  add       Add tags to existing tags
+  remove    Remove specific tags
+  replace   Replace all tags with new ones
+  list      List current tags (--tags not required)
+
+Examples:
+  # Add tags
+  blackops-center manage-tags --post-id abc123 \\
+    --action add --tags "ai,automation"
+
+  # Remove tags
+  blackops-center manage-tags --post-id abc123 \\
+    --action remove --tags "outdated"
+
+  # Replace all tags
+  blackops-center manage-tags --post-id abc123 \\
+    --action replace --tags "new,tags,only"
+
+  # List current tags
+  blackops-center manage-tags --post-id abc123 --action list
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$POST_ID" ]] || [[ -z "$ACTION" ]]; then
+  echo "Error: --post-id and --action are required" >&2
+  echo "Run 'blackops-center manage-tags --help' for usage" >&2
+  exit 1
+fi
+
+# Validate action
+case "$ACTION" in
+  add|remove|replace|list)
+    ;;
+  *)
+    echo "Error: Invalid action '$ACTION'. Must be: add, remove, replace, or list" >&2
+    exit 1
+    ;;
+esac
+
+# For list action, just get the post and extract tags
+if [[ "$ACTION" == "list" ]]; then
+  QUERY=""
+  if [[ -n "$SITE_ID" ]]; then
+    QUERY="?site_id=${SITE_ID}"
+  elif [[ -n "$DOMAIN" ]]; then
+    QUERY="?domain=${DOMAIN}"
+  elif [[ -n "${BLACKOPS_DEFAULT_SITE_ID}" ]]; then
+    QUERY="?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+  fi
+  
+  RESPONSE=$(curl -s -X GET \
+    -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+    -H "Content-Type: application/json" \
+    "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}${QUERY}")
+  
+  echo "$RESPONSE" | jq -r '.tags // .post.tags // [] | join(", ")'
+  exit 0
+fi
+
+# For other actions, tags are required
+if [[ -z "$TAGS" ]]; then
+  echo "Error: --tags is required for action '$ACTION'" >&2
+  exit 1
+fi
+
+# Build JSON payload
+PAYLOAD=$(jq -n \
+  --arg action "$ACTION" \
+  --arg tags "$TAGS" \
+  --arg domain "$DOMAIN" \
+  --arg site_id "$SITE_ID" \
+  '{
+    action: $action,
+    tags: ($tags | split(",") | map(select(length > 0) | gsub("^\\s+|\\s+$"; "")))
+  } + (if $domain != "" then {domain: $domain} else {} end)
+    + (if $site_id != "" then {site_id: $site_id} else {} end)')
+
+RESPONSE=$(curl -s -X POST \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$PAYLOAD" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}/tags")
+
+# Output the full JSON response
+echo "$RESPONSE"
+
+# Show updated tags
+UPDATED_TAGS=$(echo "$RESPONSE" | jq -r '.tags // .post.tags // [] | join(", ")')
+
+echo "" >&2
+echo "✓ Tags ${ACTION}ed" >&2
+echo "Current tags: ${UPDATED_TAGS}" >&2

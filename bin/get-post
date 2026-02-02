@@ -3,22 +3,70 @@ set -euo pipefail
 
 # Get a specific post by ID
 
-if [[ $# -eq 0 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
-  cat <<EOF
+SITE_ID=""
+DOMAIN=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --site-id)
+      SITE_ID="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
 Get a specific post by ID
 
 Usage:
-  blackops-center get-post <post-id>
+  blackops-center get-post <post-id> [options]
+
+Options:
+  --site-id <id>      Specify site by ID
+  --domain <domain>   Specify site by domain
 
 Examples:
   blackops-center get-post abc123-def456-789
+  blackops-center get-post abc123-def456-789 --site-id ec149738-d388-44e3-bcd0-cbe2440807ac
+  blackops-center get-post abc123-def456-789 --domain benenewton.com
 EOF
-  exit 0
+      exit 0
+      ;;
+    *)
+      if [[ -z "${POST_ID:-}" ]]; then
+        POST_ID="$1"
+        shift
+      else
+        echo "Unknown option: $1" >&2
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+if [[ -z "${POST_ID:-}" ]]; then
+  echo "Error: post-id is required" >&2
+  echo "Run 'blackops-center get-post --help' for usage." >&2
+  exit 1
 fi
 
-POST_ID="$1"
+# Use default site_id if not specified
+if [[ -z "$SITE_ID" ]] && [[ -z "$DOMAIN" ]]; then
+  SITE_ID="${BLACKOPS_DEFAULT_SITE_ID}"
+fi
+
+# Build query string
+QUERY=""
+if [[ -n "$SITE_ID" ]]; then
+  QUERY="?site_id=${SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  QUERY="?domain=${DOMAIN}"
+fi
 
 curl -s -X GET \
   -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
   -H "Content-Type: application/json" \
-  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}"
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}${QUERY}"

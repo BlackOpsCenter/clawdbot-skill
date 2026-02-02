@@ -1,13 +1,13 @@
 ---
 name: blackops-center
-description: Control your BlackOps Center sites from OpenClaw - create, publish, and manage blog posts via API.
+description: Control multiple BlackOps Center sites from OpenClaw - create, publish, manage posts, generate heroes, and optimize SEO.
 homepage: https://github.com/BlackOpsCenter/openclaw-skill
 metadata: {"openclaw":{"emoji":"📝","requires":{"bins":["curl","jq"]}}}
 ---
 
 # BlackOps Center Skill
 
-Control your BlackOps Center sites from OpenClaw. Create, publish, and manage blog posts via API.
+Control your BlackOps Center sites from OpenClaw. Create, publish, and manage blog posts with advanced features for hero images, SEO, and multi-site support.
 
 ## Setup
 
@@ -22,14 +22,26 @@ Control your BlackOps Center sites from OpenClaw. Create, publish, and manage bl
    # Edit config.yaml and paste your token
    ```
 
+3. **Discover your sites**:
+   ```bash
+   blackops-center list-sites
+   ```
+   
+   This will show all sites associated with your token. No manual configuration needed!
+
 ## Configuration
 
-Create `config.yaml`:
+Create `config.yaml` with just your token:
 
 ```yaml
 api_token: "your-token-here"
 base_url: "https://blackopscenter.com"  # or your custom domain
+
+# Optional: Set a default site
+# default_domain: "yourdomain.com"
 ```
+
+Sites are automatically discovered from your account. Run `list-sites` to see them.
 
 ## Available Commands
 
@@ -37,13 +49,26 @@ All commands use the `blackops-center` CLI wrapper.
 
 ### List Sites
 
-Show all sites you have access to:
+Show all sites you have access to (auto-discovered from your token):
 
 ```bash
 blackops-center list-sites
 ```
 
-Returns JSON with your sites and which one is active for this token.
+Returns JSON with all your sites:
+```json
+{
+  "sites": [
+    {
+      "id": "abc-123",
+      "domain": "yourdomain.com",
+      "name": "Your Site Name"
+    }
+  ]
+}
+```
+
+No manual configuration needed — your token determines which sites you can access.
 
 ### List Posts
 
@@ -137,6 +162,82 @@ Preview: https://yoursite.com/preview/post-slug?token=abc123
 blackops-center delete-post <post-id>
 ```
 
+### Generate Hero Image
+
+Generate an AI-powered hero image for a post:
+
+```bash
+# Auto-generate from post content
+blackops-center generate-hero --post-id abc123
+
+# Custom prompt
+blackops-center generate-hero --post-id abc123 \
+  --prompt "futuristic AI assistant coding" \
+  --style modern
+
+# For specific site
+blackops-center generate-hero --post-id abc123 \
+  --domain example.com
+```
+
+**Styles:** modern, minimal, tech, artistic
+
+### Update SEO Metadata
+
+Update SEO fields for better search visibility:
+
+```bash
+# Update SEO title and description
+blackops-center update-seo --post-id abc123 \
+  --title "Best AI Tools for 2026" \
+  --description "Comprehensive guide to AI automation tools"
+
+# Update all SEO fields
+blackops-center update-seo --post-id abc123 \
+  --title "Complete Guide" \
+  --description "Everything you need" \
+  --keywords "ai,automation,productivity" \
+  --og-image "https://example.com/hero.jpg"
+```
+
+### Manage Tags
+
+Advanced tag management operations:
+
+```bash
+# Add tags to existing tags
+blackops-center manage-tags --post-id abc123 \
+  --action add --tags "ai,automation"
+
+# Remove specific tags
+blackops-center manage-tags --post-id abc123 \
+  --action remove --tags "outdated,deprecated"
+
+# Replace all tags
+blackops-center manage-tags --post-id abc123 \
+  --action replace --tags "new,fresh,updated"
+
+# List current tags
+blackops-center manage-tags --post-id abc123 --action list
+```
+
+## Multi-Site Support
+
+All commands support `--domain` or `--site-id` flags to target specific sites:
+
+```bash
+# List posts for Your Site
+blackops-center list-posts --domain yourdomain.com
+
+# Create post on Another Site
+blackops-center create-post --domain example.com \
+  --title "Personal Post" --content "..."
+
+# Generate hero for Third Site post
+blackops-center generate-hero --post-id xyz789 \
+  --domain anothersite.com --style tech
+```
+
 ## Usage from OpenClaw
 
 When you invoke this skill from a OpenClaw session, you can use natural language:
@@ -164,6 +265,7 @@ When you invoke this skill from a OpenClaw session, you can use natural language
 
 This skill uses the BlackOps Center Extension API (`/api/ext/*`):
 
+**Content Management:**
 - `GET /api/ext/sites` - List sites
 - `GET /api/ext/posts` - List posts
 - `POST /api/ext/posts` - Create post
@@ -171,7 +273,14 @@ This skill uses the BlackOps Center Extension API (`/api/ext/*`):
 - `PUT /api/ext/posts/:id` - Update post
 - `DELETE /api/ext/posts/:id` - Delete post
 
+**Advanced Features (v1.2.0+):**
+- `POST /api/ext/posts/:id/generate-hero` - Generate AI hero image
+- `PUT /api/ext/posts/:id/seo` - Update SEO metadata
+- `POST /api/ext/posts/:id/tags` - Manage tags
+
 All requests require `Authorization: Bearer <token>` header.
+
+**Multi-site routing:** All endpoints support `?domain=` or `?site_id=` query parameters.
 
 ## Error Handling
 

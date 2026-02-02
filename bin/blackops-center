@@ -17,6 +17,8 @@ fi
 # Parse YAML (simple grep-based approach for these specific keys)
 API_TOKEN=$(grep '^api_token:' "$CONFIG_FILE" | sed 's/^api_token:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
 BASE_URL=$(grep '^base_url:' "$CONFIG_FILE" | sed 's/^base_url:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+DEFAULT_SITE_ID=$(grep '^default_site_id:' "$CONFIG_FILE" | sed 's/^default_site_id:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+DEFAULT_DOMAIN=$(grep '^default_domain:' "$CONFIG_FILE" | sed 's/^default_domain:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
 
 if [[ -z "$API_TOKEN" ]]; then
   echo "Error: api_token not set in config.yaml" >&2
@@ -30,6 +32,8 @@ fi
 # Export for subcommands
 export BLACKOPS_API_TOKEN="$API_TOKEN"
 export BLACKOPS_BASE_URL="$BASE_URL"
+export BLACKOPS_DEFAULT_SITE_ID="$DEFAULT_SITE_ID"
+export BLACKOPS_DEFAULT_DOMAIN="$DEFAULT_DOMAIN"
 
 # Route to subcommand
 COMMAND="${1:-help}"
@@ -54,6 +58,15 @@ case "$COMMAND" in
   delete-post)
     exec "${SKILL_DIR}/bin/delete-post" "$@"
     ;;
+  generate-hero)
+    exec "${SKILL_DIR}/bin/generate-hero" "$@"
+    ;;
+  update-seo)
+    exec "${SKILL_DIR}/bin/update-seo" "$@"
+    ;;
+  manage-tags)
+    exec "${SKILL_DIR}/bin/manage-tags" "$@"
+    ;;
   help|--help|-h)
     cat <<EOF
 BlackOps Center CLI
@@ -61,18 +74,26 @@ BlackOps Center CLI
 Usage:
   blackops-center <command> [options]
 
-Commands:
-  list-sites                List all sites you have access to
+Content Commands:
+  list-sites                List all sites you have access to (via API)
   list-posts                List posts for your site
   get-post <id>             Get a specific post
   create-post               Create a new post
   update-post <id>          Update an existing post
   delete-post <id>          Delete a post
 
+Advanced Features:
+  generate-hero             Generate AI hero image for a post
+  update-seo                Update SEO metadata (title, description, keywords)
+  manage-tags               Manage post tags (add, remove, replace, list)
+
 Examples:
-  blackops-center list-posts --status draft
+  blackops-center list-posts --status draft --domain benenewton.com
   blackops-center create-post --title "My Post" --content "Content here"
   blackops-center update-post abc123 --status published
+  blackops-center generate-hero --post-id abc123 --style modern
+  blackops-center update-seo --post-id abc123 --title "SEO Title"
+  blackops-center manage-tags --post-id abc123 --action add --tags "ai,automation"
 
 Run 'blackops-center <command> --help' for command-specific help.
 EOF

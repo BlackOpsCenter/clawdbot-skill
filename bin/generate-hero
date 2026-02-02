@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Generate a hero image for a post
+
+POST_ID=""
+PROMPT=""
+STYLE="modern"
+DOMAIN=""
+SITE_ID=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --post-id)
+      POST_ID="$2"
+      shift 2
+      ;;
+    --prompt)
+      PROMPT="$2"
+      shift 2
+      ;;
+    --style)
+      STYLE="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --site-id)
+      SITE_ID="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Generate a hero image for a post using AI
+
+Usage:
+  blackops-center generate-hero --post-id <id> [options]
+
+Required:
+  --post-id <id>        Post ID to generate hero for
+
+Optional:
+  --prompt <text>       Custom prompt for image generation (auto-generated if omitted)
+  --style <style>       Visual style (modern, minimal, tech, artistic, default: modern)
+  --domain <domain>     Specify site by domain
+  --site-id <id>        Specify site by ID
+
+Examples:
+  # Auto-generate hero from post content
+  blackops-center generate-hero --post-id abc123
+
+  # Custom prompt
+  blackops-center generate-hero --post-id abc123 \\
+    --prompt "futuristic AI assistant helping a developer"
+
+  # Specify style
+  blackops-center generate-hero --post-id abc123 --style minimal
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$POST_ID" ]]; then
+  echo "Error: --post-id is required" >&2
+  echo "Run 'blackops-center generate-hero --help' for usage" >&2
+  exit 1
+fi
+
+# Build JSON payload
+PAYLOAD=$(jq -n \
+  --arg post_id "$POST_ID" \
+  --arg prompt "$PROMPT" \
+  --arg style "$STYLE" \
+  --arg domain "$DOMAIN" \
+  --arg site_id "$SITE_ID" \
+  '{
+    post_id: $post_id,
+    style: $style
+  } + (if $prompt != "" then {prompt: $prompt} else {} end)
+    + (if $domain != "" then {domain: $domain} else {} end)
+    + (if $site_id != "" then {site_id: $site_id} else {} end)')
+
+RESPONSE=$(curl -s -X POST \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$PAYLOAD" \
+  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}/generate-hero")
+
+# Output the full JSON response
+echo "$RESPONSE"
+
+# Extract hero URL if available
+HERO_URL=$(echo "$RESPONSE" | jq -r '.hero_image_url // .post.hero_image_url // empty')
+
+if [[ -n "$HERO_URL" ]]; then
+  echo "" >&2
+  echo "✓ Hero image generated" >&2
+  echo "URL: $HERO_URL" >&2
+fi

@@ -54,6 +54,11 @@ EOF
   esac
 done
 
+# Use default site_id if not specified
+if [[ -z "$SITE_ID" ]] && [[ -z "$DOMAIN" ]]; then
+  SITE_ID="${BLACKOPS_DEFAULT_SITE_ID}"
+fi
+
 # Build query string
 QUERY="?limit=${LIMIT}"
 if [[ -n "$STATUS" ]]; then
