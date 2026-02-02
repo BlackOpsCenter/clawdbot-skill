@@ -88,7 +88,7 @@ Advanced Features:
   manage-tags               Manage post tags (add, remove, replace, list)
 
 Examples:
-  blackops-center list-posts --status draft --domain benenewton.com
+  blackops-center list-posts --status draft --domain example.com
   blackops-center create-post --title "My Post" --content "Content here"
   blackops-center update-post abc123 --status published
   blackops-center generate-hero --post-id abc123 --style modern

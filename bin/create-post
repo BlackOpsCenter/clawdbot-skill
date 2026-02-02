@@ -56,7 +56,7 @@ Optional:
   --excerpt <text>      Post excerpt/description
   --tags <tags>         Comma-separated tags (e.g., "ai,automation,tools")
   --status <status>     Post status (draft or published, default: draft)
-  --domain <domain>     Specify site by domain (e.g., benenewton.com)
+  --domain <domain>     Specify site by domain (e.g., example.com)
   --site-id <id>        Specify site by ID
 
 Examples:

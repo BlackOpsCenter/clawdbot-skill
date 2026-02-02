@@ -31,7 +31,7 @@ Options:
 Examples:
   blackops-center get-post abc123-def456-789
   blackops-center get-post abc123-def456-789 --site-id ec149738-d388-44e3-bcd0-cbe2440807ac
-  blackops-center get-post abc123-def456-789 --domain benenewton.com
+  blackops-center get-post abc123-def456-789 --domain example.com
 EOF
       exit 0
       ;;
