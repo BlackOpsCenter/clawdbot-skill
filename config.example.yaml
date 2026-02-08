@@ -10,8 +10,12 @@ api_token: "your-token-here"
 # For self-hosted or custom domains, change this
 base_url: "https://blackopscenter.com"
 
-# Optional: Set a default site by domain or ID
-# If not set, commands will require --domain or --site-id
+# Optional: Set a default site by domain (NOT RECOMMENDED for multi-site users)
+# If not set, you must specify --domain on every command
 # Run 'blackops-center list-sites' to see your available sites
+# 
+# IMPORTANT: If you manage multiple sites (e.g., personal blog + company blog),
+# DO NOT set default_domain. Always use --domain explicitly instead.
+# This prevents accidentally posting to the wrong site.
+#
 # default_domain: "yourdomain.com"
-# default_site_id: "your-site-uuid"
