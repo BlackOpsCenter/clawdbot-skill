@@ -87,11 +87,22 @@ PAYLOAD=$(jq -n \
     + (if $domain != "" then {domain: $domain} else {} end)
     + (if $site_id != "" then {site_id: $site_id} else {} end)')
 
+# Add site_id to URL if available
+if [[ -n "${BLACKOPS_DEFAULT_SITE_ID:-}" ]]; then
+  API_URL="${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}/generate-hero?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+else
+  API_URL="${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}/generate-hero"
+fi
+
+# Let user know this might take time
+echo "⏳ Generating hero image... This may take 30-60 seconds." >&2
+
 RESPONSE=$(curl -s -X POST \
   -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD" \
-  "${BLACKOPS_BASE_URL}/api/ext/posts/${POST_ID}/generate-hero")
+  --max-time 120 \
+  "$API_URL")
 
 # Output the full JSON response
 echo "$RESPONSE"

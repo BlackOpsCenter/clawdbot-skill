@@ -67,6 +67,12 @@ case "$COMMAND" in
   manage-tags)
     exec "${SKILL_DIR}/bin/manage-tags" "$@"
     ;;
+  send-tweet)
+    exec "${SKILL_DIR}/bin/send-tweet" "$@"
+    ;;
+  reply-tweet)
+    exec "${SKILL_DIR}/bin/reply-tweet" "$@"
+    ;;
   help|--help|-h)
     cat <<EOF
 BlackOps Center CLI
@@ -86,6 +92,8 @@ Advanced Features:
   generate-hero             Generate AI hero image for a post
   update-seo                Update SEO metadata (title, description, keywords)
   manage-tags               Manage post tags (add, remove, replace, list)
+  send-tweet                Send a tweet or thread to Twitter
+  reply-tweet               Reply to a tweet on Twitter
 
 Examples:
   blackops-center list-posts --status draft --domain example.com
@@ -94,6 +102,8 @@ Examples:
   blackops-center generate-hero --post-id abc123 --style modern
   blackops-center update-seo --post-id abc123 --title "SEO Title"
   blackops-center manage-tags --post-id abc123 --action add --tags "ai,automation"
+  blackops-center send-tweet --text "Hello from OpenClaw"
+  blackops-center reply-tweet --tweet-url "https://x.com/user/status/123" --text "Great point!"
 
 Run 'blackops-center <command> --help' for command-specific help.
 EOF

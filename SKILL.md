@@ -221,6 +221,34 @@ blackops-center manage-tags --post-id abc123 \
 blackops-center manage-tags --post-id abc123 --action list
 ```
 
+### Reply to Tweet
+
+Reply to a tweet on Twitter:
+
+```bash
+# Reply to a tweet by URL
+blackops-center reply-tweet \
+  --tweet-url "https://x.com/user/status/123456789" \
+  --text "Great point! I wrote about this here: https://example.com/blog/post"
+
+# Reply by tweet ID
+blackops-center reply-tweet \
+  --tweet-id "123456789" \
+  --text "Exactly what I've been thinking 💯"
+
+# Reply from specific site
+blackops-center reply-tweet \
+  --domain example.com \
+  --tweet-url "https://x.com/user/status/123" \
+  --text "This aligns with our research"
+```
+
+**Options:**
+- `--text TEXT` - Reply text (required)
+- `--tweet-url URL` - Tweet URL to reply to (either this or tweet-id required)
+- `--tweet-id ID` - Tweet ID to reply to (either this or tweet-url required)
+- `--domain DOMAIN` - Target specific site (uses default if not set)
+
 ## Multi-Site Support
 
 All commands support `--domain` or `--site-id` flags to target specific sites:
@@ -261,6 +289,12 @@ When you invoke this skill from a OpenClaw session, you can use natural language
 1. Run `blackops-center list-posts --status draft --limit 10`
 2. Format the results in a readable way
 
+**User:** "Reply to https://x.com/user/status/123 with 'Great insight!'"
+
+**Assistant will:**
+1. Run `blackops-center reply-tweet --tweet-url "..." --text "Great insight!"`
+2. Return the posted reply URL
+
 ## API Details
 
 This skill uses the BlackOps Center Extension API (`/api/ext/*`):
@@ -277,6 +311,11 @@ This skill uses the BlackOps Center Extension API (`/api/ext/*`):
 - `POST /api/ext/posts/:id/generate-hero` - Generate AI hero image
 - `PUT /api/ext/posts/:id/seo` - Update SEO metadata
 - `POST /api/ext/posts/:id/tags` - Manage tags
+
+**Twitter Integration:**
+- `POST /api/ext/twitter/send` - Send tweet or thread
+- `POST /api/ext/twitter/reply` - Reply to a tweet
+- `POST /api/ext/twitter/generate-reply` - Generate AI reply text (UI only)
 
 All requests require `Authorization: Bearer <token>` header.
 

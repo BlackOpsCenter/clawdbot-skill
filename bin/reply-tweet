@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Reply to a tweet via BlackOps Twitter integration
+
+# Parse arguments
+TEXT=""
+TWEET_ID=""
+TWEET_URL=""
+DOMAIN=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --text)
+      TEXT="$2"
+      shift 2
+      ;;
+    --tweet-id)
+      TWEET_ID="$2"
+      shift 2
+      ;;
+    --tweet-url)
+      TWEET_URL="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Reply to a tweet via BlackOps
+
+Usage:
+  reply-tweet --tweet-url "https://x.com/user/status/123" --text "Reply text"
+  reply-tweet --tweet-id "123456789" --text "Reply text"
+  reply-tweet --domain example.com --tweet-url "..." --text "..."
+
+Options:
+  --text TEXT          Reply text (required)
+  --tweet-url URL      Tweet URL to reply to
+  --tweet-id ID        Tweet ID to reply to
+  --domain DOMAIN      Target a specific site (uses default if not set)
+  --help, -h           Show this help
+
+Examples:
+  # Reply to a tweet by URL
+  reply-tweet --tweet-url "https://x.com/elonmusk/status/123" --text "Great point!"
+
+  # Reply by ID
+  reply-tweet --tweet-id "1234567890" --text "I agree 💯"
+
+  # Different site
+  reply-tweet --domain benenewton.com --tweet-url "..." --text "..."
+
+The reply will be posted immediately and appear in your Twitter notifications.
+Rate limiting and posting quotas apply.
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run 'reply-tweet --help' for usage." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Validate input
+if [[ -z "$TEXT" ]]; then
+  echo "Error: --text is required" >&2
+  echo "Run 'reply-tweet --help' for usage." >&2
+  exit 1
+fi
+
+if [[ -z "$TWEET_ID" && -z "$TWEET_URL" ]]; then
+  echo "Error: Either --tweet-id or --tweet-url is required" >&2
+  echo "Run 'reply-tweet --help' for usage." >&2
+  exit 1
+fi
+
+# Build JSON payload
+if [[ -n "$TWEET_ID" ]]; then
+  JSON_DATA=$(jq -n --arg text "$TEXT" --arg tweet_id "$TWEET_ID" '{text: $text, tweet_id: $tweet_id}')
+else
+  JSON_DATA=$(jq -n --arg text "$TEXT" --arg tweet_url "$TWEET_URL" '{text: $text, tweet_url: $tweet_url}')
+fi
+
+# Build URL with optional site_id or domain query param
+URL="${BLACKOPS_BASE_URL}/api/ext/twitter/reply"
+if [[ -n "$BLACKOPS_DEFAULT_SITE_ID" && -z "$DOMAIN" ]]; then
+  URL="${URL}?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  URL="${URL}?domain=${DOMAIN}"
+fi
+
+# Send request
+RESPONSE=$(curl -s -X POST "$URL" \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$JSON_DATA")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq -r '.error' >&2
+  exit 1
+fi
+
+# Output JSON on stdout
+echo "$RESPONSE"
+
+# Human-readable output on stderr
+if echo "$RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+  REPLY_URL=$(echo "$RESPONSE" | jq -r '.url')
+  IN_REPLY_TO=$(echo "$RESPONSE" | jq -r '.inReplyTo')
+  
+  echo "✓ Reply posted" >&2
+  echo "URL: $REPLY_URL" >&2
+  echo "In reply to: https://x.com/i/status/$IN_REPLY_TO" >&2
+fi

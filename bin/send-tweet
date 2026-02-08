@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Send a tweet or thread via BlackOps Twitter integration
+
+# Parse arguments
+TEXT=""
+THREAD_TWEETS=()
+DOMAIN=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --text)
+      TEXT="$2"
+      shift 2
+      ;;
+    --thread)
+      THREAD_TWEETS+=("$2")
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Send a tweet or thread to Twitter via BlackOps
+
+Usage:
+  send-tweet --text "Single tweet text"
+  send-tweet --thread "Tweet 1" --thread "Tweet 2" --thread "Tweet 3"
+  send-tweet --domain example.com --text "Site-specific tweet"
+
+Options:
+  --text TEXT      Send a single tweet
+  --thread TEXT    Add a tweet to a thread (repeatable)
+  --domain DOMAIN  Target a specific site (uses default if not set)
+  --help, -h       Show this help
+
+Examples:
+  # Single tweet
+  send-tweet --text "Hello from Chief 👋"
+
+  # Thread
+  send-tweet \\
+    --thread "1/ Just shipped a new feature..." \\
+    --thread "2/ It connects OpenClaw to Twitter..." \\
+    --thread "3/ Now I can tweet programmatically!"
+
+  # Different site
+  send-tweet --domain benenewton.com --text "Personal update"
+
+The tweet/thread will be posted immediately and appear in your BlackOps Center
+Twitter dashboard. Rate limiting and posting quotas apply.
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run 'send-tweet --help' for usage." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Validate input
+if [[ -z "$TEXT" && ${#THREAD_TWEETS[@]} -eq 0 ]]; then
+  echo "Error: Either --text or --thread is required" >&2
+  echo "Run 'send-tweet --help' for usage." >&2
+  exit 1
+fi
+
+if [[ -n "$TEXT" && ${#THREAD_TWEETS[@]} -gt 0 ]]; then
+  echo "Error: Provide either --text or --thread, not both" >&2
+  exit 1
+fi
+
+# Build JSON payload
+if [[ -n "$TEXT" ]]; then
+  # Single tweet
+  JSON_DATA=$(jq -n --arg text "$TEXT" '{text: $text}')
+else
+  # Thread
+  JSON_DATA=$(jq -n --argjson thread "$(printf '%s\n' "${THREAD_TWEETS[@]}" | jq -R . | jq -s .)" '{thread: $thread}')
+fi
+
+# Build URL with optional site_id or domain query param
+URL="${BLACKOPS_BASE_URL}/api/ext/twitter/send"
+if [[ -n "$BLACKOPS_DEFAULT_SITE_ID" && -z "$DOMAIN" ]]; then
+  URL="${URL}?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  URL="${URL}?domain=${DOMAIN}"
+fi
+
+# Send request
+RESPONSE=$(curl -s -X POST "$URL" \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "$JSON_DATA")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq -r '.error' >&2
+  exit 1
+fi
+
+# Output JSON on stdout
+echo "$RESPONSE"
+
+# Human-readable output on stderr
+if echo "$RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+  TWEET_URL=$(echo "$RESPONSE" | jq -r '.url')
+  TWEET_COUNT=$(echo "$RESPONSE" | jq -r '.tweetsPosted')
+  
+  if [[ "$TWEET_COUNT" -eq 1 ]]; then
+    echo "✓ Tweet posted" >&2
+  else
+    echo "✓ Thread posted ($TWEET_COUNT tweets)" >&2
+  fi
+  
+  echo "URL: $TWEET_URL" >&2
+fi

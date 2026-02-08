@@ -133,10 +133,18 @@ if [[ -n "$POST_SLUG" ]] && [[ -n "$PREVIEW_TOKEN" ]]; then
     fi
   fi
   
-  # Construct preview URL
-  PREVIEW_URL="https://${PREVIEW_DOMAIN}/preview/${POST_SLUG}?token=${PREVIEW_TOKEN}"
+  # Construct preview URL (format: /blog/{slug}?preview={token})
+  PREVIEW_URL="https://${PREVIEW_DOMAIN}/blog/${POST_SLUG}?preview=${PREVIEW_TOKEN}"
+  
+  # Also show live URL for published posts
+  LIVE_URL="https://${PREVIEW_DOMAIN}/blog/${POST_SLUG}"
   
   echo "" >&2
-  echo "✓ Post created: $POST_STATUS" >&2
-  echo "Preview: $PREVIEW_URL" >&2
+  if [[ "$POST_STATUS" == "published" ]]; then
+    echo "✓ Post created: $POST_STATUS" >&2
+    echo "Live URL: $LIVE_URL" >&2
+  else
+    echo "✓ Post created: $POST_STATUS" >&2
+    echo "Preview: $PREVIEW_URL" >&2
+  fi
 fi
