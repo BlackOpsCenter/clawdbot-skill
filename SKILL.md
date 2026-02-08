@@ -37,11 +37,16 @@ Create `config.yaml` with just your token:
 api_token: "your-token-here"
 base_url: "https://blackopscenter.com"  # or your custom domain
 
-# Optional: Set a default site
+# Optional: Set a default site (not recommended for multi-site users)
 # default_domain: "yourdomain.com"
 ```
 
 Sites are automatically discovered from your account. Run `list-sites` to see them.
+
+**Important for Multi-Site Users:**
+- Always specify `--domain` explicitly when running commands
+- If you have multiple sites, do NOT set `default_domain` in config
+- OpenClaw agents should ask which site to use if not specified in your request
 
 ## Available Commands
 
@@ -273,27 +278,29 @@ When you invoke this skill from a OpenClaw session, you can use natural language
 **User:** "Create a blog post about AI agents titled 'The Future of Automation'"
 
 **Assistant will:**
-1. Extract title and content from your message
-2. Run `blackops-center create-post --title "..." --content "..."`
-3. Return the post ID and preview URL
+1. **Ask which site** if you have multiple sites and didn't specify
+2. Extract title and content from your message
+3. Run `blackops-center create-post --domain yourdomain.com --title "..." --content "..."`
+4. Return the post ID and preview URL
 
-**User:** "Publish post abc123"
-
-**Assistant will:**
-1. Run `blackops-center update-post abc123 --status published`
-2. Confirm publication and provide the live URL
-
-**User:** "Show me my recent draft posts"
+**User:** "Tweet from BlackOps Tools: 'Just shipped a new feature'"
 
 **Assistant will:**
-1. Run `blackops-center list-posts --status draft --limit 10`
-2. Format the results in a readable way
+1. Identify the site from context (BlackOps Tools = blackopscenter.com)
+2. Run `blackops-center send-tweet --domain blackopscenter.com --text "Just shipped a new feature"`
+3. Return the posted tweet URL
 
-**User:** "Reply to https://x.com/user/status/123 with 'Great insight!'"
+**User:** "Reply to https://x.com/user/status/123 with 'Great insight!' from my personal site"
 
 **Assistant will:**
-1. Run `blackops-center reply-tweet --tweet-url "..." --text "Great insight!"`
-2. Return the posted reply URL
+1. Identify site from context (personal site = benenewton.com)
+2. Run `blackops-center reply-tweet --domain benenewton.com --tweet-url "..." --text "Great insight!"`
+3. Return the posted reply URL
+
+**Important for Agents:**
+- Always include `--domain` flag in commands
+- If site is ambiguous, ask the user which site to use
+- Use `list-sites` to show available options if needed
 
 ## API Details
 
