@@ -96,11 +96,12 @@ if [[ -n "$TEXT" ]]; then
     JSON_DATA=$(jq -n --arg text "$TEXT" '{text: $text}')
   fi
 else
-  # Thread
+  # Thread - build array properly to preserve newlines in each tweet
+  # Use jq's --args to pass each array element as a separate argument
   if [[ -n "$SCHEDULED_FOR" ]]; then
-    JSON_DATA=$(jq -n --argjson thread "$(printf '%s\n' "${THREAD_TWEETS[@]}" | jq -R . | jq -s .)" --arg scheduledFor "$SCHEDULED_FOR" '{thread: $thread, scheduledFor: $scheduledFor}')
+    JSON_DATA=$(jq -n --arg scheduledFor "$SCHEDULED_FOR" --args '{thread: $ARGS.positional, scheduledFor: $scheduledFor}' "${THREAD_TWEETS[@]}")
   else
-    JSON_DATA=$(jq -n --argjson thread "$(printf '%s\n' "${THREAD_TWEETS[@]}" | jq -R . | jq -s .)" '{thread: $thread}')
+    JSON_DATA=$(jq -n --args '{thread: $ARGS.positional}' "${THREAD_TWEETS[@]}")
   fi
 fi
 
