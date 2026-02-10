@@ -226,6 +226,56 @@ blackops-center manage-tags --post-id abc123 \
 blackops-center manage-tags --post-id abc123 --action list
 ```
 
+### Send Tweet
+
+Send a tweet or thread to Twitter:
+
+```bash
+# Single tweet (immediate)
+blackops-center send-tweet \
+  --text "Just shipped a new feature for BlackOps Center 🚀"
+
+# Thread (immediate)
+blackops-center send-tweet \
+  --thread "1/ Just launched a major update..." \
+  --thread "2/ New features include AI-powered hero images..." \
+  --thread "3/ Check it out at blackopscenter.com"
+
+# Scheduled tweet
+blackops-center send-tweet \
+  --text "Weekly content marketing tip 💡" \
+  --scheduled-for "2026-02-10T14:30:00Z"
+
+# Different site with scheduling
+blackops-center send-tweet \
+  --domain benenewton.com \
+  --text "Personal update about my latest project" \
+  --scheduled-for "2026-02-10T08:00:00-05:00"
+```
+
+**Options:**
+- `--text TEXT` - Send a single tweet (either this or --thread required)
+- `--thread TEXT` - Add a tweet to a thread (repeatable)
+- `--domain DOMAIN` - Target specific site (uses default if not set)
+- `--scheduled-for DATE` - Schedule for later (ISO 8601 format, must be future date)
+
+**Scheduling:**
+- Scheduled tweets are processed by the BlackOps Center cron job (runs every 5 minutes)
+- Format: ISO 8601 with timezone (e.g., `2026-02-10T14:30:00Z` or `2026-02-10T09:30:00-05:00`)
+- Must be a future date/time
+- View scheduled tweets in the BlackOps Center Twitter dashboard
+
+**Output (immediate):**
+```
+✓ Tweet posted
+URL: https://x.com/BlackOpsTools/status/123456789
+```
+
+**Output (scheduled):**
+```
+✓ Tweet scheduled for 2026-02-10T14:30:00Z
+```
+
 ### Reply to Tweet
 
 Reply to a tweet on Twitter:
