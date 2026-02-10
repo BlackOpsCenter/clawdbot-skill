@@ -7,6 +7,7 @@ set -euo pipefail
 TEXT=""
 THREAD_TWEETS=()
 DOMAIN=""
+SCHEDULED_FOR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -22,6 +23,10 @@ while [[ $# -gt 0 ]]; do
       DOMAIN="$2"
       shift 2
       ;;
+    --scheduled-for)
+      SCHEDULED_FOR="$2"
+      shift 2
+      ;;
     --help|-h)
       cat <<EOF
 Send a tweet or thread to Twitter via BlackOps
@@ -30,28 +35,35 @@ Usage:
   send-tweet --text "Single tweet text"
   send-tweet --thread "Tweet 1" --thread "Tweet 2" --thread "Tweet 3"
   send-tweet --domain example.com --text "Site-specific tweet"
+  send-tweet --text "Scheduled tweet" --scheduled-for "2026-02-10T08:47:00Z"
 
 Options:
-  --text TEXT      Send a single tweet
-  --thread TEXT    Add a tweet to a thread (repeatable)
-  --domain DOMAIN  Target a specific site (uses default if not set)
-  --help, -h       Show this help
+  --text TEXT             Send a single tweet
+  --thread TEXT           Add a tweet to a thread (repeatable)
+  --domain DOMAIN         Target a specific site (uses default if not set)
+  --scheduled-for DATE    Schedule for later (ISO 8601 format, e.g. 2026-02-10T14:30:00Z)
+  --help, -h              Show this help
 
 Examples:
-  # Single tweet
+  # Single tweet (immediate)
   send-tweet --text "Hello from Chief 👋"
 
-  # Thread
+  # Thread (immediate)
   send-tweet \\
     --thread "1/ Just shipped a new feature..." \\
     --thread "2/ It connects OpenClaw to Twitter..." \\
     --thread "3/ Now I can tweet programmatically!"
 
+  # Scheduled tweet
+  send-tweet \\
+    --text "Content marketing at scale" \\
+    --scheduled-for "2026-02-10T08:47:00-05:00"
+
   # Different site
   send-tweet --domain benenewton.com --text "Personal update"
 
-The tweet/thread will be posted immediately and appear in your BlackOps Center
-Twitter dashboard. Rate limiting and posting quotas apply.
+Scheduled tweets will be posted automatically by the scheduler.
+Rate limiting and posting quotas apply.
 EOF
       exit 0
       ;;
@@ -78,10 +90,18 @@ fi
 # Build JSON payload
 if [[ -n "$TEXT" ]]; then
   # Single tweet
-  JSON_DATA=$(jq -n --arg text "$TEXT" '{text: $text}')
+  if [[ -n "$SCHEDULED_FOR" ]]; then
+    JSON_DATA=$(jq -n --arg text "$TEXT" --arg scheduledFor "$SCHEDULED_FOR" '{text: $text, scheduledFor: $scheduledFor}')
+  else
+    JSON_DATA=$(jq -n --arg text "$TEXT" '{text: $text}')
+  fi
 else
   # Thread
-  JSON_DATA=$(jq -n --argjson thread "$(printf '%s\n' "${THREAD_TWEETS[@]}" | jq -R . | jq -s .)" '{thread: $thread}')
+  if [[ -n "$SCHEDULED_FOR" ]]; then
+    JSON_DATA=$(jq -n --argjson thread "$(printf '%s\n' "${THREAD_TWEETS[@]}" | jq -R . | jq -s .)" --arg scheduledFor "$SCHEDULED_FOR" '{thread: $thread, scheduledFor: $scheduledFor}')
+  else
+    JSON_DATA=$(jq -n --argjson thread "$(printf '%s\n' "${THREAD_TWEETS[@]}" | jq -R . | jq -s .)" '{thread: $thread}')
+  fi
 fi
 
 # Build URL with optional site_id or domain query param
@@ -109,14 +129,27 @@ echo "$RESPONSE"
 
 # Human-readable output on stderr
 if echo "$RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
-  TWEET_URL=$(echo "$RESPONSE" | jq -r '.url')
-  TWEET_COUNT=$(echo "$RESPONSE" | jq -r '.tweetsPosted')
-  
-  if [[ "$TWEET_COUNT" -eq 1 ]]; then
-    echo "✓ Tweet posted" >&2
+  if echo "$RESPONSE" | jq -e '.scheduled' >/dev/null 2>&1; then
+    # Scheduled tweet
+    SCHEDULED_FOR=$(echo "$RESPONSE" | jq -r '.scheduledFor')
+    TWEET_COUNT=$(echo "$RESPONSE" | jq -r '.tweetsScheduled')
+    
+    if [[ "$TWEET_COUNT" -eq 1 ]]; then
+      echo "✓ Tweet scheduled for $SCHEDULED_FOR" >&2
+    else
+      echo "✓ Thread scheduled for $SCHEDULED_FOR ($TWEET_COUNT tweets)" >&2
+    fi
   else
-    echo "✓ Thread posted ($TWEET_COUNT tweets)" >&2
+    # Immediate tweet
+    TWEET_URL=$(echo "$RESPONSE" | jq -r '.url')
+    TWEET_COUNT=$(echo "$RESPONSE" | jq -r '.tweetsPosted')
+    
+    if [[ "$TWEET_COUNT" -eq 1 ]]; then
+      echo "✓ Tweet posted" >&2
+    else
+      echo "✓ Thread posted ($TWEET_COUNT tweets)" >&2
+    fi
+    
+    echo "URL: $TWEET_URL" >&2
   fi
-  
-  echo "URL: $TWEET_URL" >&2
 fi
