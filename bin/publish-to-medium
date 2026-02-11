@@ -59,9 +59,15 @@ BEGIN { in_paragraph = 0 }
 
 # Handle images with captions
 /^!\[.*\]\(.*\)$/ {
-  match($0, /!\[(.*)\]\((.*)\)/, arr)
-  alt = arr[1]
-  url = arr[2]
+  # Extract alt text and URL using sed-style matching
+  line = $0
+  sub(/^!\[/, "", line)
+  alt = line
+  sub(/\]\(.*$/, "", alt)
+  url = $0
+  sub(/^!\[.*\]\(/, "", url)
+  sub(/\)$/, "", url)
+  
   if (in_paragraph) {
     print "</p>"
     in_paragraph = 0
@@ -115,9 +121,19 @@ END {
 }
 ')
 
+# Prepend title and subtitle to body content (Medium doesn't auto-display the title)
+TITLE_HTML="<h1>${TITLE}</h1>"
+if [[ -n "$DESCRIPTION" && "$DESCRIPTION" != "null" ]]; then
+  TITLE_HTML="${TITLE_HTML}<p><em>${DESCRIPTION}</em></p><hr>"
+else
+  TITLE_HTML="${TITLE_HTML}<hr>"
+fi
+
 # Add hero image if exists
 if [[ -n "$FEATURED_IMAGE" && "$FEATURED_IMAGE" != "null" ]]; then
-  HTML_CONTENT="<figure><img src=\"${FEATURED_IMAGE}\" alt=\"${TITLE}\"/></figure>${HTML_CONTENT}"
+  HTML_CONTENT="${TITLE_HTML}<figure><img src=\"${FEATURED_IMAGE}\" alt=\"${TITLE}\"/></figure>${HTML_CONTENT}"
+else
+  HTML_CONTENT="${TITLE_HTML}${HTML_CONTENT}"
 fi
 
 # Add footer
