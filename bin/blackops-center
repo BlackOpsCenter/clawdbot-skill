@@ -4,7 +4,14 @@ set -euo pipefail
 # BlackOps Center CLI
 # Main entry point for all commands
 
-SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve symlinks to find the real script location
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT_PATH" ]; do
+  SCRIPT_DIR="$(cd -P "$(dirname "$SCRIPT_PATH")" && pwd)"
+  SCRIPT_PATH="$(readlink "$SCRIPT_PATH")"
+  [[ $SCRIPT_PATH != /* ]] && SCRIPT_PATH="$SCRIPT_DIR/$SCRIPT_PATH"
+done
+SKILL_DIR="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
 CONFIG_FILE="${SKILL_DIR}/config.yaml"
 
 # Load config
@@ -17,8 +24,8 @@ fi
 # Parse YAML (simple grep-based approach for these specific keys)
 API_TOKEN=$(grep '^api_token:' "$CONFIG_FILE" | sed 's/^api_token:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
 BASE_URL=$(grep '^base_url:' "$CONFIG_FILE" | sed 's/^base_url:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
-DEFAULT_SITE_ID=$(grep '^default_site_id:' "$CONFIG_FILE" | sed 's/^default_site_id:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
-DEFAULT_DOMAIN=$(grep '^default_domain:' "$CONFIG_FILE" | sed 's/^default_domain:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+DEFAULT_SITE_ID=$(grep '^default_site_id:' "$CONFIG_FILE" | sed 's/^default_site_id:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r' || true)
+DEFAULT_DOMAIN=$(grep '^default_domain:' "$CONFIG_FILE" | sed 's/^default_domain:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r' || true)
 
 if [[ -z "$API_TOKEN" ]]; then
   echo "Error: api_token not set in config.yaml" >&2
@@ -73,6 +80,15 @@ case "$COMMAND" in
   reply-tweet)
     exec "${SKILL_DIR}/bin/reply-tweet" "$@"
     ;;
+  delete-tweet)
+    exec "${SKILL_DIR}/bin/delete-tweet" "$@"
+    ;;
+  list-scheduled-tweets)
+    exec "${SKILL_DIR}/bin/list-scheduled-tweets" "$@"
+    ;;
+  delete-scheduled-tweet)
+    exec "${SKILL_DIR}/bin/delete-scheduled-tweet" "$@"
+    ;;
   help|--help|-h)
     cat <<EOF
 BlackOps Center CLI
@@ -92,8 +108,13 @@ Advanced Features:
   generate-hero             Generate AI hero image for a post
   update-seo                Update SEO metadata (title, description, keywords)
   manage-tags               Manage post tags (add, remove, replace, list)
+
+Twitter Commands:
   send-tweet                Send a tweet or thread to Twitter
   reply-tweet               Reply to a tweet on Twitter
+  delete-tweet              Delete a posted tweet from Twitter
+  list-scheduled-tweets     List all scheduled tweets with IDs and status
+  delete-scheduled-tweet    Delete a scheduled tweet by ID
 
 Examples:
   blackops-center list-posts --status draft --domain example.com
@@ -104,6 +125,9 @@ Examples:
   blackops-center manage-tags --post-id abc123 --action add --tags "ai,automation"
   blackops-center send-tweet --text "Hello from OpenClaw"
   blackops-center reply-tweet --tweet-url "https://x.com/user/status/123" --text "Great point!"
+  blackops-center delete-tweet --tweet-id 2021371957497717136
+  blackops-center list-scheduled-tweets
+  blackops-center delete-scheduled-tweet --id abc123xyz
 
 Run 'blackops-center <command> --help' for command-specific help.
 EOF
