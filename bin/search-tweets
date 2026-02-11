@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Search for tweets via BlackOps Twitter integration
+
+# Parse arguments
+QUERY=""
+MAX_RESULTS="10"
+DOMAIN=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --query|-q)
+      QUERY="$2"
+      shift 2
+      ;;
+    --max-results|-n)
+      MAX_RESULTS="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Search for tweets via BlackOps
+
+Usage:
+  search-tweets --query "AI agents -is:retweet min_faves:5"
+  search-tweets -q "content creation" -n 20
+  search-tweets --domain example.com --query "..."
+
+Options:
+  --query, -q TEXT       Search query (required)
+  --max-results, -n NUM  Maximum results (default: 10, max: 100)
+  --domain DOMAIN        Target a specific site (uses default if not set)
+  --help, -h             Show this help
+
+Query Examples:
+  # AI agents with engagement
+  search-tweets -q "AI agents -is:retweet min_faves:5"
+
+  # Content creation pain points
+  search-tweets -q "struggling with content creation"
+
+  # Marketing automation questions
+  search-tweets -q "how to automate marketing"
+
+  # Monitor specific accounts
+  search-tweets -q "from:levelsio OR from:naval"
+
+  # Recent indie hacker discussions
+  search-tweets -q "#indiehacker -is:reply min_faves:10"
+
+Query Operators:
+  keyword          Match keyword in tweet text
+  "exact phrase"   Exact phrase match
+  -keyword         Exclude keyword
+  from:username    Tweets from specific user
+  to:username      Replies to specific user
+  min_faves:N      Minimum likes
+  min_retweets:N   Minimum retweets
+  -is:retweet      Exclude retweets
+  -is:reply        Exclude replies
+  lang:en          Language filter
+
+Note: Searches recent tweets (last 7 days). Usage is tracked for
+pay-as-you-go billing (no monthly caps).
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run 'search-tweets --help' for usage." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Validate input
+if [[ -z "$QUERY" ]]; then
+  echo "Error: --query is required" >&2
+  echo "Run 'search-tweets --help' for usage." >&2
+  exit 1
+fi
+
+# URL encode the query
+ENCODED_QUERY=$(echo "$QUERY" | jq -sRr @uri)
+
+# Build URL with query params
+URL="${BLACKOPS_BASE_URL}/api/ext/twitter/search?query=${ENCODED_QUERY}&max_results=${MAX_RESULTS}"
+
+if [[ -n "$BLACKOPS_DEFAULT_SITE_ID" && -z "$DOMAIN" ]]; then
+  URL="${URL}&site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  URL="${URL}&domain=${DOMAIN}"
+fi
+
+# Send request
+RESPONSE=$(curl -s -X GET "$URL" \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq -r '.error' >&2
+  exit 1
+fi
+
+# Output JSON on stdout
+echo "$RESPONSE"
+
+# Human-readable summary on stderr
+if echo "$RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+  COUNT=$(echo "$RESPONSE" | jq -r '.meta.result_count // 0')
+  USED=$(echo "$RESPONSE" | jq -r '.usage.used // 0')
+  
+  echo "✓ Found $COUNT tweets" >&2
+  echo "Usage: $USED reads this month (pay-as-you-go)" >&2
+fi

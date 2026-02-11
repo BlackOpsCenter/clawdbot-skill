@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# List all scheduled tweets
+
+# Parse arguments
+DOMAIN=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+List all scheduled tweets for a site
+
+Usage:
+  list-scheduled-tweets
+  list-scheduled-tweets --domain example.com
+
+Options:
+  --domain DOMAIN         Target a specific site (uses default if not set)
+  --help, -h              Show this help
+
+Output:
+  JSON array of scheduled tweets with IDs, content, and scheduled times
+
+Examples:
+  # List for default site
+  list-scheduled-tweets
+
+  # List for specific site
+  list-scheduled-tweets --domain blackopscenter.com
+
+  # Extract just IDs
+  list-scheduled-tweets | jq -r '.[].id'
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run 'list-scheduled-tweets --help' for usage." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Build URL with optional site_id or domain query param
+URL="${BLACKOPS_BASE_URL}/api/ext/twitter/scheduled"
+if [[ -n "$BLACKOPS_DEFAULT_SITE_ID" && -z "$DOMAIN" ]]; then
+  URL="${URL}?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  URL="${URL}?domain=${DOMAIN}"
+fi
+
+# Send request
+RESPONSE=$(curl -s -X GET "$URL" \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq -r '.error' >&2
+  exit 1
+fi
+
+# Output JSON on stdout
+echo "$RESPONSE"
+
+# Human-readable summary on stderr
+TWEET_COUNT=$(echo "$RESPONSE" | jq 'length')
+echo "Found $TWEET_COUNT scheduled tweet(s)" >&2

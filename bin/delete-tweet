@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Delete a tweet via BlackOps Twitter integration
+
+# Parse arguments
+TWEET_ID=""
+TWEET_URL=""
+DOMAIN=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --tweet-id)
+      TWEET_ID="$2"
+      shift 2
+      ;;
+    --tweet-url)
+      TWEET_URL="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Delete a tweet from Twitter via BlackOps
+
+Usage:
+  delete-tweet --tweet-id ID
+  delete-tweet --tweet-url URL
+  delete-tweet --domain example.com --tweet-url URL
+
+Options:
+  --tweet-id ID       Tweet ID to delete
+  --tweet-url URL     Tweet URL to extract ID from
+  --domain DOMAIN     Target a specific site (uses default if not set)
+  --help, -h          Show this help
+
+Examples:
+  # Delete by ID
+  delete-tweet --tweet-id 2021371957497717136
+
+  # Delete by URL
+  delete-tweet --tweet-url "https://x.com/BensChief/status/2021371957497717136"
+
+  # Delete from specific site
+  delete-tweet --domain chiefoperates.com --tweet-id 2021371957497717136
+
+Returns:
+  JSON with success status and deleted tweet ID
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Run 'delete-tweet --help' for usage." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Extract tweet ID from URL if provided
+if [[ -n "$TWEET_URL" && -z "$TWEET_ID" ]]; then
+  # Extract ID from various URL formats:
+  # https://x.com/user/status/123456789
+  # https://twitter.com/user/status/123456789
+  if [[ "$TWEET_URL" =~ /status/([0-9]+) ]]; then
+    TWEET_ID="${BASH_REMATCH[1]}"
+  else
+    echo "Error: Could not extract tweet ID from URL: $TWEET_URL" >&2
+    exit 1
+  fi
+fi
+
+# Validate required args
+if [[ -z "$TWEET_ID" ]]; then
+  echo "Error: --tweet-id or --tweet-url required" >&2
+  echo "Run 'delete-tweet --help' for usage." >&2
+  exit 1
+fi
+
+# Build URL with optional site_id or domain query param
+URL="${BLACKOPS_BASE_URL}/api/ext/twitter/tweets/${TWEET_ID}"
+if [[ -n "$BLACKOPS_DEFAULT_SITE_ID" && -z "$DOMAIN" ]]; then
+  URL="${URL}?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  URL="${URL}?domain=${DOMAIN}"
+fi
+
+# Send request
+RESPONSE=$(curl -s -X DELETE "$URL" \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}" \
+  -H "Content-Type: application/json")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq -r '.error' >&2
+  exit 1
+fi
+
+# Output JSON on stdout
+echo "$RESPONSE"
+
+# Human-readable confirmation on stderr
+if echo "$RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+  echo "✓ Tweet deleted: $TWEET_ID" >&2
+fi

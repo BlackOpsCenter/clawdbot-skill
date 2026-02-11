@@ -276,6 +276,61 @@ URL: https://x.com/BlackOpsTools/status/123456789
 ✓ Tweet scheduled for 2026-02-10T14:30:00Z
 ```
 
+### List Scheduled Tweets
+
+List all scheduled tweets for a site:
+
+```bash
+# List for default site
+blackops-center list-scheduled-tweets
+
+# List for specific site
+blackops-center list-scheduled-tweets --domain blackopscenter.com
+
+# Extract just IDs for bulk operations
+blackops-center list-scheduled-tweets | jq -r '.[].id'
+```
+
+**Output:**
+```json
+[
+  {
+    "id": "abc123",
+    "title": "Thread preview...",
+    "content": ["Tweet 1", "Tweet 2", "Tweet 3"],
+    "scheduledFor": "2026-02-11T09:00:00-05:00",
+    "tweetCount": 3,
+    "createdAt": "2026-02-10T05:26:00Z"
+  }
+]
+```
+
+### Delete Scheduled Tweet
+
+Delete a scheduled tweet by ID:
+
+```bash
+# Delete by ID
+blackops-center delete-scheduled-tweet --id abc123
+
+# Delete from specific site
+blackops-center delete-scheduled-tweet --id abc123 --domain blackopscenter.com
+
+# Delete all scheduled tweets (be careful!)
+blackops-center list-scheduled-tweets | jq -r '.[].id' | while read id; do
+  blackops-center delete-scheduled-tweet --id "$id"
+done
+```
+
+**Options:**
+- `--id ID` - Scheduled tweet ID (required)
+- `--domain DOMAIN` - Target specific site (uses default if not set)
+
+**Output:**
+```
+✓ Scheduled tweet deleted: abc123
+```
+
 ### Reply to Tweet
 
 Reply to a tweet on Twitter:
@@ -303,6 +358,61 @@ blackops-center reply-tweet \
 - `--tweet-url URL` - Tweet URL to reply to (either this or tweet-id required)
 - `--tweet-id ID` - Tweet ID to reply to (either this or tweet-url required)
 - `--domain DOMAIN` - Target specific site (uses default if not set)
+
+### Search Tweets
+
+Search for tweets matching a query (last 7 days):
+
+```bash
+# AI agents with engagement
+blackops-center search-tweets \
+  --query "AI agents -is:retweet min_faves:5"
+
+# Content creation pain points
+blackops-center search-tweets \
+  --query "struggling with content creation" \
+  --max-results 20
+
+# Monitor specific accounts
+blackops-center search-tweets \
+  --query "from:levelsio OR from:naval"
+
+# Indie hacker discussions
+blackops-center search-tweets \
+  --query "#indiehacker -is:reply min_faves:10"
+
+# Different site
+blackops-center search-tweets \
+  --domain example.com \
+  --query "AI automation"
+```
+
+**Options:**
+- `--query, -q TEXT` - Search query (required)
+- `--max-results, -n NUM` - Maximum results (default: 10, max: 100)
+- `--domain DOMAIN` - Target specific site (uses default if not set)
+
+**Query Operators:**
+- `keyword` - Match keyword in tweet text
+- `"exact phrase"` - Exact phrase match
+- `-keyword` - Exclude keyword
+- `from:username` - Tweets from specific user
+- `to:username` - Replies to specific user
+- `min_faves:N` - Minimum likes
+- `min_retweets:N` - Minimum retweets
+- `-is:retweet` - Exclude retweets
+- `-is:reply` - Exclude replies
+- `lang:en` - Language filter
+
+**Output:**
+```
+✓ Found 8 tweets
+Usage: 108 reads this month (1392 remaining)
+```
+
+Returns JSON with tweet data (id, text, author, metrics) and usage tracking.
+
+**Note:** Searches are tracked for pay-as-you-go billing (no monthly caps).
 
 ## Multi-Site Support
 

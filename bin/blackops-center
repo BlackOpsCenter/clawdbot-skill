@@ -80,6 +80,9 @@ case "$COMMAND" in
   reply-tweet)
     exec "${SKILL_DIR}/bin/reply-tweet" "$@"
     ;;
+  search-tweets)
+    exec "${SKILL_DIR}/bin/search-tweets" "$@"
+    ;;
   delete-tweet)
     exec "${SKILL_DIR}/bin/delete-tweet" "$@"
     ;;
@@ -112,6 +115,7 @@ Advanced Features:
 Twitter Commands:
   send-tweet                Send a tweet or thread to Twitter
   reply-tweet               Reply to a tweet on Twitter
+  search-tweets             Search for tweets (tracks usage quota)
   delete-tweet              Delete a posted tweet from Twitter
   list-scheduled-tweets     List all scheduled tweets with IDs and status
   delete-scheduled-tweet    Delete a scheduled tweet by ID
@@ -125,6 +129,7 @@ Examples:
   blackops-center manage-tags --post-id abc123 --action add --tags "ai,automation"
   blackops-center send-tweet --text "Hello from OpenClaw"
   blackops-center reply-tweet --tweet-url "https://x.com/user/status/123" --text "Great point!"
+  blackops-center search-tweets --query "AI agents min_faves:5" --max-results 10
   blackops-center delete-tweet --tweet-id 2021371957497717136
   blackops-center list-scheduled-tweets
   blackops-center delete-scheduled-tweet --id abc123xyz

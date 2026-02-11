@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Publish BlackOps post to Medium with footer
+# Usage: publish-to-medium <domain> <slug> [draft|unlisted|public]
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 <domain> <slug> [draft|unlisted|public]" >&2
+  exit 1
+fi
+
+DOMAIN="$1"
+SLUG="$2"
+STATUS="${3:-public}"
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_FILE="${SKILL_DIR}/config.yaml"
+
+# Load config
+API_TOKEN=$(grep '^api_token:' "$CONFIG_FILE" | sed 's/^api_token:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+BASE_URL=$(grep '^base_url:' "$CONFIG_FILE" | sed 's/^base_url:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+MEDIUM_TOKEN=$(grep '^medium_token:' "$CONFIG_FILE" | sed 's/^medium_token:[[:space:]]*//; s/^"//; s/"$//' | tr -d '\n\r')
+
+if [[ -z "$MEDIUM_TOKEN" ]]; then
+  echo "Error: medium_token not set in config.yaml" >&2
+  exit 1
+fi
+
+# Get Medium user ID
+MEDIUM_USER=$(curl -s -H "Authorization: Bearer $MEDIUM_TOKEN" https://api.medium.com/v1/me)
+USER_ID=$(echo "$MEDIUM_USER" | jq -r '.data.id')
+
+if [[ -z "$USER_ID" || "$USER_ID" == "null" ]]; then
+  echo "Error: Could not get Medium user ID" >&2
+  exit 1
+fi
+
+# Fetch post from BlackOps
+POST_JSON=$(curl -s -H "Authorization: Bearer $API_TOKEN" \
+  "${BASE_URL}/api/ext/posts?domain=${DOMAIN}&limit=100" | \
+  jq --arg slug "$SLUG" '.posts[] | select(.slug == $slug)')
+
+if [[ -z "$POST_JSON" ]]; then
+  echo "Error: Post not found: $SLUG" >&2
+  exit 1
+fi
+
+TITLE=$(echo "$POST_JSON" | jq -r '.title')
+CONTENT=$(echo "$POST_JSON" | jq -r '.content')
+DESCRIPTION=$(echo "$POST_JSON" | jq -r '.description // ""')
+FEATURED_IMAGE=$(echo "$POST_JSON" | jq -r '.featured_image // ""')
+TAGS=$(echo "$POST_JSON" | jq -r '.tags[]?' | head -5)
+CANONICAL_URL="https://${DOMAIN}/blog/${SLUG}"
+
+# Convert markdown to HTML (basic conversion)
+# Extract images and convert to HTML figures
+HTML_CONTENT=$(echo "$CONTENT" | awk '
+BEGIN { in_paragraph = 0 }
+
+# Handle images with captions
+/^!\[.*\]\(.*\)$/ {
+  match($0, /!\[(.*)\]\((.*)\)/, arr)
+  alt = arr[1]
+  url = arr[2]
+  if (in_paragraph) {
+    print "</p>"
+    in_paragraph = 0
+  }
+  print "<figure><img src=\"" url "\" alt=\"" alt "\"/>"
+  getline
+  if ($0 ~ /^\*.*\*$/) {
+    gsub(/^\*/, "", $0)
+    gsub(/\*$/, "", $0)
+    print "<figcaption>" $0 "</figcaption>"
+    getline
+  }
+  print "</figure>"
+  next
+}
+
+# Handle headings
+/^## / {
+  if (in_paragraph) {
+    print "</p>"
+    in_paragraph = 0
+  }
+  sub(/^## /, "")
+  print "<h2>" $0 "</h2>"
+  next
+}
+
+# Handle paragraphs
+/^$/ {
+  if (in_paragraph) {
+    print "</p>"
+    in_paragraph = 0
+  }
+  next
+}
+
+{
+  if (!in_paragraph) {
+    printf "<p>"
+    in_paragraph = 1
+  } else {
+    printf " "
+  }
+  printf "%s", $0
+}
+
+END {
+  if (in_paragraph) {
+    print "</p>"
+  }
+}
+')
+
+# Add hero image if exists
+if [[ -n "$FEATURED_IMAGE" && "$FEATURED_IMAGE" != "null" ]]; then
+  HTML_CONTENT="<figure><img src=\"${FEATURED_IMAGE}\" alt=\"${TITLE}\"/></figure>${HTML_CONTENT}"
+fi
+
+# Add footer
+HTML_CONTENT="${HTML_CONTENT}<hr><p><em>Originally posted at <a href=\"${CANONICAL_URL}\">${CANONICAL_URL}</a></em></p>"
+
+# Convert tags to array
+TAGS_JSON=$(echo "$TAGS" | jq -R . | jq -s .)
+
+# Publish to Medium
+RESPONSE=$(curl -s -X POST \
+  -H "Authorization: Bearer $MEDIUM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n \
+    --arg title "$TITLE" \
+    --arg content "$HTML_CONTENT" \
+    --argjson tags "$TAGS_JSON" \
+    --arg canonical "$CANONICAL_URL" \
+    --arg status "$STATUS" \
+    '{
+      title: $title,
+      contentFormat: "html",
+      content: $content,
+      tags: $tags,
+      canonicalUrl: $canonical,
+      publishStatus: $status
+    }')" \
+  "https://api.medium.com/v1/users/${USER_ID}/posts")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.errors' >/dev/null 2>&1; then
+  echo "Error publishing to Medium:" >&2
+  echo "$RESPONSE" | jq '.errors' >&2
+  exit 1
+fi
+
+# Output success
+MEDIUM_URL=$(echo "$RESPONSE" | jq -r '.data.url')
+echo "Published to Medium: $MEDIUM_URL"
+echo "$RESPONSE" | jq '.data'

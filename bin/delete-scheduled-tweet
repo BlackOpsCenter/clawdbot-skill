@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Delete a scheduled tweet by ID
+
+# Parse arguments
+TWEET_ID=""
+DOMAIN=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --id)
+      TWEET_ID="$2"
+      shift 2
+      ;;
+    --domain)
+      DOMAIN="$2"
+      shift 2
+      ;;
+    --help|-h)
+      cat <<EOF
+Delete a scheduled tweet by ID
+
+Usage:
+  delete-scheduled-tweet --id <tweet-id>
+  delete-scheduled-tweet --id <tweet-id> --domain example.com
+
+Options:
+  --id ID                 Tweet ID to delete (required)
+  --domain DOMAIN         Target a specific site (uses default if not set)
+  --help, -h              Show this help
+
+Examples:
+  # Delete by ID
+  delete-scheduled-tweet --id abc123xyz
+
+  # Delete from specific site
+  delete-scheduled-tweet --id abc123xyz --domain blackopscenter.com
+
+  # Delete all scheduled tweets (be careful!)
+  list-scheduled-tweets | jq -r '.[].id' | while read id; do
+    delete-scheduled-tweet --id "\$id"
+  done
+EOF
+      exit 0
+      ;;
+    *)
+      # First positional arg is tweet ID
+      if [[ -z "$TWEET_ID" ]]; then
+        TWEET_ID="$1"
+        shift
+      else
+        echo "Unknown option: $1" >&2
+        echo "Run 'delete-scheduled-tweet --help' for usage." >&2
+        exit 1
+      fi
+      ;;
+  esac
+done
+
+# Validate input
+if [[ -z "$TWEET_ID" ]]; then
+  echo "Error: --id is required" >&2
+  echo "Run 'delete-scheduled-tweet --help' for usage." >&2
+  exit 1
+fi
+
+# Build URL with optional site_id or domain query param
+URL="${BLACKOPS_BASE_URL}/api/ext/twitter/scheduled/${TWEET_ID}"
+if [[ -n "$BLACKOPS_DEFAULT_SITE_ID" && -z "$DOMAIN" ]]; then
+  URL="${URL}?site_id=${BLACKOPS_DEFAULT_SITE_ID}"
+elif [[ -n "$DOMAIN" ]]; then
+  URL="${URL}?domain=${DOMAIN}"
+fi
+
+# Send request
+RESPONSE=$(curl -s -X DELETE "$URL" \
+  -H "Authorization: Bearer ${BLACKOPS_API_TOKEN}")
+
+# Check for errors
+if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+  echo "$RESPONSE" | jq -r '.error' >&2
+  exit 1
+fi
+
+# Output JSON on stdout
+echo "$RESPONSE"
+
+# Human-readable output on stderr
+if echo "$RESPONSE" | jq -e '.success' >/dev/null 2>&1; then
+  echo "✓ Scheduled tweet deleted: $TWEET_ID" >&2
+fi
