@@ -75,6 +75,78 @@ Returns JSON with all your sites:
 
 No manual configuration needed — your token determines which sites you can access.
 
+### Get Voice Profile
+
+Get the AI-analyzed voice profile for a site. BlackOps Center analyzes your published blog posts to extract your authentic writing voice — tone scores, style features, expertise areas, and common patterns. This is **not** a marketing persona — it's a data-driven fingerprint of how you actually write.
+
+```bash
+# Get voice profile for default site
+blackops-center get-voice
+
+# Get voice for specific site
+blackops-center get-voice --domain benenewton.com
+```
+
+Returns JSON with your analyzed voice profile:
+```json
+{
+  "voice_profile": {
+    "tone_scores": {
+      "casual": 0.5,
+      "friendly": 0.62,
+      "humorous": 0.23,
+      "technical": 0.76,
+      "analytical": 0.69,
+      "professional": 0.72,
+      "authoritative": 0.68,
+      "conversational": 0.61
+    },
+    "style_features": [
+      "technical_density",
+      "personal_anecdotes",
+      "avg_sentence_length",
+      "code_examples_usage",
+      "paragraph_structure"
+    ],
+    "expertise_areas": [
+      "software development",
+      "AI integration",
+      "DevOps",
+      "frontend architecture"
+    ],
+    "common_patterns": [
+      "What if",
+      "Here's how",
+      "The problem was",
+      "Sound familiar?"
+    ],
+    "compiled_prompt": "Writing style: technical, professional, analytical...",
+    "sample_size": 10
+  },
+  "examples": [],
+  "analysis_count": 10
+}
+```
+
+**Key fields:**
+- **`tone_scores`** — Numeric breakdown of your writing tone (0-1 scale)
+- **`style_features`** — Structural characteristics of your writing
+- **`expertise_areas`** — Topics extracted from your posts
+- **`common_patterns`** — Phrases and hooks you frequently use
+- **`compiled_prompt`** — Ready-to-use prompt for AI content generation
+- **`sample_size`** / **`analysis_count`** — Number of posts analyzed
+
+**Use case:** Feed the `compiled_prompt` (or the full profile) to AI models for content generation (tweets, replies, blog posts) that match your authentic voice — not a marketing persona.
+
+If no posts have been analyzed yet, returns:
+```json
+{
+  "voice_profile": null,
+  "examples": [],
+  "analysis_count": 0
+}
+```
+
 ### List Posts
 
 List posts for your site:

@@ -50,6 +50,9 @@ case "$COMMAND" in
   list-sites)
     exec "${SKILL_DIR}/bin/list-sites" "$@"
     ;;
+  get-voice)
+    exec "${SKILL_DIR}/bin/get-voice" "$@"
+    ;;
   list-posts)
     exec "${SKILL_DIR}/bin/list-posts" "$@"
     ;;
@@ -101,6 +104,7 @@ Usage:
 
 Content Commands:
   list-sites                List all sites you have access to (via API)
+  get-voice                 Get brand voice profile for a site (for AI generation)
   list-posts                List posts for your site
   get-post <id>             Get a specific post
   create-post               Create a new post
